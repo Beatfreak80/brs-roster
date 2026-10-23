@@ -1,0 +1,10 @@
+# Rulebooks and source documents (large / publisher material)
+*.pdf
+*.docx
+
+# Campaign save files
+*.json
+
+.claude/
+Thumbs.db
+.DS_Store

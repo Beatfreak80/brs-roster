@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blood Red Skies – Campaign Roster</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand">Blood Red Skies <span>Campaign Roster</span></a>
+    <div class="filebar">
+      <span id="file-status"></span>
+      <button data-act="file-open" title="Open a campaign JSON file">Open…</button>
+      <button data-act="file-save" class="primary" title="Save to the campaign file (Ctrl+S)">Save</button>
+      <button data-act="file-saveas">Save as…</button>
+      <button data-act="file-new" class="subtle" title="Start a new, empty campaign">New</button>
+    </div>
+  </header>
+  <div class="layout">
+    <nav id="nav" class="sidebar"></nav>
+    <main id="app"></main>
+  </div>
+  <input type="file" id="file-input" accept=".json,application/json" hidden>
+
+  <script src="js/data.js"></script>
+  <script src="js/scenarios.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/calc.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
