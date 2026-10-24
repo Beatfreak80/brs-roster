@@ -17,11 +17,15 @@ Pilot XP, skill, sorties and kills are **worked out** from each pilot's starting
 
 Open `index.html` in Chrome or Edge. There's no install or build step.
 
+It's designed for phones. On a desktop it shows as a phone-width column.
+
+There are two navigation layouts to try, switched with the **A | B** toggle in the header:
+- **A**: a bottom tab bar (Campaign / Missions / RAF / Luftwaffe), with a mission picker in the header.
+- **B**: a single "jump to" dropdown in the header.
+
 ## Saving
 
-- Every change is autosaved in the browser.
-- **Save** / **Save as…** writes the whole campaign to a `.json` file (Ctrl+S works). In Chrome and Edge, Save writes back to the same file; in other browsers it downloads a copy.
-- **Open…** loads a campaign file, for example one your opponent sent you.
+Every change is autosaved in the browser. A shared database will replace this later. Until then, use **Export backup** / **Import backup** at the bottom of the Campaign page to keep a copy.
 
 ## Files
 

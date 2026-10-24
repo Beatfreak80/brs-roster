@@ -1,7 +1,6 @@
-// Campaign state: autosaved to localStorage, saved to / opened from a JSON file on disk.
+// Campaign state, autosaved to localStorage. (A shared database will replace this later.)
 
 const STORAGE_KEY = 'brs-roster:state';
-const META_KEY = 'brs-roster:meta';
 const DATA_VERSION = 1;
 
 function newId() {
@@ -25,7 +24,7 @@ function defaultState() {
   return normalizeState(state);
 }
 
-// Fills in anything missing so older or hand-edited files still load.
+// Fills in anything missing so older data still loads.
 function normalizeState(state) {
   state.version = DATA_VERSION;
   state.sides = state.sides || {};
@@ -38,8 +37,9 @@ function normalizeState(state) {
     }, p));
   }
   for (const m of MISSIONS) {
-    const mission = state.missions[m.turn] = Object.assign({ winner: '', notes: '', lists: {}, results: {} }, state.missions[m.turn]);
+    const mission = state.missions[m.turn] = Object.assign({ winner: '', vp: {}, notes: '', lists: {}, results: {} }, state.missions[m.turn]);
     for (const side of SIDE_KEYS) {
+      if (mission.vp[side] === undefined) mission.vp[side] = '';
       const list = mission.lists[side] = Object.assign({ elements: [emptyElement(), emptyElement()] }, mission.lists[side]);
       for (const el of list.elements) {
         el.size = Number(el.size) || 2;
@@ -53,15 +53,12 @@ function normalizeState(state) {
 
 const Store = {
   state: null,
-  fileHandle: null,
-  meta: { fileName: '', dirty: false },
   listeners: [],
 
   init() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       this.state = raw ? normalizeState(JSON.parse(raw)) : defaultState();
-      this.meta = Object.assign(this.meta, JSON.parse(localStorage.getItem(META_KEY) || '{}'));
     } catch (e) {
       console.error('Could not load saved campaign', e);
       this.state = defaultState();
@@ -69,103 +66,46 @@ const Store = {
   },
 
   onChange(fn) { this.listeners.push(fn); },
-  notify() { for (const fn of this.listeners) fn(); },
-
-  persist() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-      localStorage.setItem(META_KEY, JSON.stringify(this.meta));
-    } catch (e) {
-      console.error('Autosave failed', e);
-    }
-  },
 
   // Call after every edit to state.
   commit() {
     normalizeState(this.state);
-    this.meta.dirty = true;
-    this.persist();
-    this.notify();
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+    } catch (e) {
+      console.error('Autosave failed', e);
+    }
+    for (const fn of this.listeners) fn();
   },
 
-  replace(state, fileName) {
+  replace(state) {
     this.state = normalizeState(state);
-    this.meta = { fileName: fileName || '', dirty: false };
-    this.fileHandle = null;
-    this.persist();
-    this.notify();
+    this.commit();
   },
 
-  toJson() {
-    return JSON.stringify(this.state, null, 2);
+  exportBackup() {
+    const blob = new Blob([JSON.stringify(this.state, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `brs-campaign-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   },
 
-  parse(text) {
-    const data = JSON.parse(text);
-    if (!data || typeof data !== 'object' || !data.sides || !data.missions) {
-      throw new Error('This does not look like a campaign file.');
-    }
-    return data;
-  },
-
-  async open() {
-    if (window.showOpenFilePicker) {
-      const [handle] = await window.showOpenFilePicker({
-        types: [{ description: 'Campaign file', accept: { 'application/json': ['.json'] } }],
-      });
-      const file = await handle.getFile();
-      this.replace(this.parse(await file.text()), file.name);
-      this.fileHandle = handle;
-      this.notify();
-      return;
-    }
-    // Fallback for browsers without the File System Access API.
+  importBackup() {
     const input = document.getElementById('file-input');
     input.value = '';
     input.onchange = async () => {
       const file = input.files[0];
       if (!file) return;
       try {
-        this.replace(this.parse(await file.text()), file.name);
+        const data = JSON.parse(await file.text());
+        if (!data || !data.sides || !data.missions) throw new Error('This does not look like a campaign backup.');
+        if (confirm('Replace everything in the app with this backup?')) this.replace(data);
       } catch (e) {
-        alert('Could not open file: ' + e.message);
+        alert('Could not import: ' + e.message);
       }
     };
     input.click();
-  },
-
-  async save() {
-    if (this.fileHandle) {
-      const writable = await this.fileHandle.createWritable();
-      await writable.write(this.toJson());
-      await writable.close();
-      this.meta.dirty = false;
-      this.persist();
-      this.notify();
-      return;
-    }
-    return this.saveAs();
-  },
-
-  async saveAs() {
-    const suggestedName = this.meta.fileName || 'brs-campaign.json';
-    if (window.showSaveFilePicker) {
-      this.fileHandle = await window.showSaveFilePicker({
-        suggestedName,
-        types: [{ description: 'Campaign file', accept: { 'application/json': ['.json'] } }],
-      });
-      this.meta.fileName = this.fileHandle.name;
-      return this.save();
-    }
-    const blob = new Blob([this.toJson()], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = suggestedName;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    this.meta.fileName = suggestedName;
-    this.meta.dirty = false;
-    this.persist();
-    this.notify();
   },
 };

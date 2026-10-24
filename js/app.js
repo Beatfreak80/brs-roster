@@ -1,9 +1,28 @@
-// UI: hash routing, views and edit handling. Every input carries a data-path into the
-// state; changes are written straight back, committed, and the view re-rendered.
+// Phone-first UI: hash routing, views and edit handling. Every input carries a data-path into
+// the state; changes are written straight back, committed, and the view re-rendered.
+//
+// Two navigation layouts are available while we try them out:
+//   A — bottom tab bar (Campaign / Missions / RAF / Luftwaffe) + mission picker in the header
+//   B — a single "jump to" dropdown in the header
 
-const app = document.getElementById('app');
-const nav = document.getElementById('nav');
-const openDetails = new Set(['lists', 'debrief']);
+const root = document.getElementById('root');
+const UI_KEY = 'brs-roster:ui';
+const MISSION_TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'rules', label: 'Rules' },
+  { key: 'lists', label: 'Lists' },
+  { key: 'debrief', label: 'Debrief' },
+];
+
+// Per-device view preferences (not campaign data).
+const ui = Object.assign({ layout: 'a', side: 'gb', lastMission: 0 }, readUi());
+
+function readUi() {
+  try { return JSON.parse(localStorage.getItem(UI_KEY) || '{}'); } catch (e) { return {}; }
+}
+function saveUi() {
+  try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) { /* view prefs are optional */ }
+}
 
 // ---------- helpers ----------
 
@@ -20,50 +39,62 @@ function input(path, value, { type = 'text', dtype = 'str', cls = '', attrs = ''
 }
 
 function numInput(path, value, attrs = '') {
-  return input(path, value, { type: 'number', dtype: 'int', cls: 'num', attrs });
-}
-
-function checkbox(path, checked) {
-  return `<input id="${fieldId(path)}" type="checkbox" data-path="${esc(path)}" data-type="bool" ${checked ? 'checked' : ''}>`;
+  return input(path, value, { type: 'number', dtype: 'int', cls: 'num', attrs: `inputmode="numeric" ${attrs}` });
 }
 
 function select(path, value, options, { dtype = 'str', cls = '' } = {}) {
-  const opts = options.map(o => {
-    if (o.group) {
-      return `<optgroup label="${esc(o.group)}">${o.options.map(optionHtml(value)).join('')}</optgroup>`;
-    }
-    return optionHtml(value)(o);
-  }).join('');
-  return `<select id="${fieldId(path)}" class="${cls}" data-path="${esc(path)}" data-type="${dtype}">${opts}</select>`;
+  return `<select id="${fieldId(path)}" class="${cls}" data-path="${esc(path)}" data-type="${dtype}">${optionsHtml(options, value)}</select>`;
 }
 
-function optionHtml(value) {
-  return o => `<option value="${esc(o.value)}" ${String(o.value) === String(value ?? '') ? 'selected' : ''} ${o.disabled ? 'disabled' : ''}>${esc(o.label)}</option>`;
+function optionsHtml(options, value) {
+  const one = o => `<option value="${esc(o.value)}" ${String(o.value) === String(value ?? '') ? 'selected' : ''} ${o.disabled ? 'disabled' : ''}>${esc(o.label)}</option>`;
+  return options.map(o => (o.group ? `<optgroup label="${esc(o.group)}">${o.options.map(one).join('')}</optgroup>` : one(o))).join('');
 }
 
-function textarea(path, value, rows = 3) {
-  return `<textarea id="${fieldId(path)}" data-path="${esc(path)}" data-type="str" rows="${rows}">${esc(value)}</textarea>`;
+function textarea(path, value, rows = 3, placeholder = '') {
+  return `<textarea id="${fieldId(path)}" data-path="${esc(path)}" data-type="str" rows="${rows}" placeholder="${esc(placeholder)}">${esc(value)}</textarea>`;
 }
 
-function details(key, summary, body, cls = '') {
-  return `<details class="${cls}" data-ui="${key}" ${openDetails.has(key) ? 'open' : ''}><summary>${summary}</summary>${body}</details>`;
+// Radio pills bound to a state path.
+function pills(path, value, options, dtype = 'str') {
+  return `<div class="pills">${options.map(o => `
+    <label class="pill ${String(o.value) === String(value) ? 'on' : ''} ${o.cls || ''}">
+      <input type="radio" name="${fieldId(path)}" data-path="${esc(path)}" data-type="${dtype}" value="${esc(o.value)}" ${String(o.value) === String(value) ? 'checked' : ''}>${o.label}
+    </label>`).join('')}</div>`;
+}
+
+function stepper(path, value, label) {
+  return `<div class="stepper">
+    <span class="stepper-label">${label}</span>
+    <button class="step" data-act="step" data-path="${esc(path)}" data-delta="-1" aria-label="${label} minus one">−</button>
+    <span class="stepper-value">${Number(value) || 0}</span>
+    <button class="step" data-act="step" data-path="${esc(path)}" data-delta="1" aria-label="${label} plus one">+</button>
+  </div>`;
 }
 
 function skillBadge(skill) {
-  return `<span class="skill skill-${skill}" title="${SKILL_NAME[skill]}">${skill}<small>${SKILL_NAME[skill]}</small></span>`;
+  return `<span class="skill skill-${skill}">${skill}<small>${SKILL_NAME[skill]}</small></span>`;
 }
 
 function sideTag(side) {
   return `<span class="side-tag side-${side}">${esc(SIDES[side].short)}</span>`;
 }
 
-function squadronLabel(side) {
-  const s = Store.state.sides[side];
-  return s.squadronName ? `${esc(s.squadronName)} <small>(${esc(SIDES[side].name)})</small>` : esc(SIDES[side].name);
+function squadronName(side) {
+  return Store.state.sides[side].squadronName || SIDES[side].name;
 }
 
-function joinedLabel(joined) {
-  return Number(joined) === 0 ? 'Founding' : `After turn ${joined}`;
+// Segmented RAF | Luftwaffe switch; remembers the last side picked on this device.
+function sideSwitch() {
+  return `<div class="segmented side-switch">${SIDE_KEYS.map(side =>
+    `<button class="${ui.side === side ? 'on side-' + side : ''}" data-act="set-side" data-side="${side}">${esc(SIDES[side].short)}</button>`).join('')}</div>`;
+}
+
+function resultChip(turn) {
+  const w = Store.state.missions[turn].winner;
+  if (!w) return '<span class="chip muted-chip">Not played</span>';
+  if (w === 'draw') return '<span class="chip">Draw</span>';
+  return `<span class="chip side-${w}">${esc(SIDES[w].short)} won</span>`;
 }
 
 // Renders the scenario mini markup (see scenarios.js).
@@ -99,18 +130,13 @@ function renderRules(lines) {
 
 // ---------- state path editing ----------
 
-function resolve(path, create) {
+function resolve(path) {
   const parts = path.split('.');
   let obj = Store.state;
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
-    let next;
-    if (part.startsWith('#')) next = obj.find(x => x.id === part.slice(1));
-    else next = obj[part];
-    if (next == null) {
-      if (!create) return null;
-      next = obj[part] = {};
-    }
+    let next = part.startsWith('#') ? obj.find(x => x.id === part.slice(1)) : obj[part];
+    if (next == null) next = obj[part] = {};
     obj = next;
   }
   let key = parts[parts.length - 1];
@@ -122,6 +148,7 @@ function readValue(el) {
   const type = el.dataset.type;
   if (type === 'bool') return el.checked;
   if (type === 'int') return el.value === '' ? 0 : Number(el.value);
+  if (type === 'optint') return el.value === '' ? '' : Number(el.value);
   if (type === 'nullstr') return el.value || null;
   return el.value;
 }
@@ -133,48 +160,43 @@ function afterEdit(path, value) {
     const def = FATES.find(f => f.key === value);
     const found = findPilot(Store.state, fate[1]);
     if (def && def.status && found) found.pilot.status = def.status;
-    if (def && ['kia', 'captured', 'mia'].includes(value)) {
-      const r = resolve(path, true).obj;
-      r.survived = value !== 'kia';
-    }
+    if (def && ['kia', 'captured', 'mia'].includes(value)) resolve(path).obj.survived = value !== 'kia';
   }
 }
 
-app.addEventListener('change', e => {
+document.addEventListener('change', e => {
+  const nav = e.target.closest('[data-nav]');
+  if (nav) {
+    location.hash = nav.value;
+    return;
+  }
   const el = e.target.closest('[data-path]');
   if (!el) return;
-  const target = resolve(el.dataset.path, true);
-  if (!target) return;
+  const { obj, key } = resolve(el.dataset.path);
   const value = readValue(el);
-  target.obj[target.key] = value;
+  obj[key] = value;
   afterEdit(el.dataset.path, value);
   Store.commit();
 });
 
-app.addEventListener('toggle', e => {
-  const el = e.target;
-  if (!el.dataset || !el.dataset.ui) return;
-  if (el.open) openDetails.add(el.dataset.ui);
-  else openDetails.delete(el.dataset.ui);
-}, true);
-
 // ---------- actions ----------
 
+function newPilot(side, joined) {
+  const pilot = {
+    id: newId(), name: '', startSkill: joined ? 2 : 3, startXp: 0, joined, status: 'Active',
+    aceSkills: [], namedAceBonus: '', xpAdjust: 0, killsAdjust: 0, notes: '',
+  };
+  Store.state.sides[side].pilots.push(pilot);
+  Store.commit();
+  location.hash = `#/pilot/${side}/${pilot.id}`;
+  setTimeout(() => {
+    const el = document.getElementById(fieldId(`sides.${side}.pilots.#${pilot.id}.name`));
+    if (el) el.focus();
+  }, 30);
+}
+
 const actions = {
-  'add-pilot'(btn) {
-    const side = btn.dataset.side;
-    const joined = Number(btn.dataset.joined || 0);
-    const pilot = {
-      id: newId(), name: '', startSkill: joined ? 2 : 3, startXp: 0, joined, status: 'Active',
-      aceSkills: [], namedAceBonus: '', xpAdjust: 0, killsAdjust: 0, notes: '',
-    };
-    Store.state.sides[side].pilots.push(pilot);
-    Store.commit();
-    setTimeout(() => {
-      const el = document.getElementById(fieldId(`sides.${side}.pilots.#${pilot.id}.name`));
-      if (el) el.focus();
-    }, 20);
-  },
+  'add-pilot'(btn) { newPilot(btn.dataset.side, Number(btn.dataset.joined || 0)); },
   'delete-pilot'(btn) {
     const { side, id } = btn.dataset;
     const pilot = Store.state.sides[side].pilots.find(p => p.id === id);
@@ -188,41 +210,46 @@ const actions = {
       for (const el of mission.lists[side].elements) el.pilots = el.pilots.map(p => (p === id ? null : p));
       delete mission.results[id];
     }
+    location.hash = `#/roster/${side}`;
     Store.commit();
-    if (location.hash.startsWith('#/pilot/')) location.hash = `#/roster/${side}`;
   },
   'add-element'(btn) {
     Store.state.missions[btn.dataset.turn].lists[btn.dataset.side].elements.push(emptyElement());
     Store.commit();
   },
   'remove-element'(btn) {
-    const list = Store.state.missions[btn.dataset.turn].lists[btn.dataset.side];
-    list.elements.splice(Number(btn.dataset.index), 1);
+    if (!confirm('Remove this element?')) return;
+    Store.state.missions[btn.dataset.turn].lists[btn.dataset.side].elements.splice(Number(btn.dataset.index), 1);
     Store.commit();
   },
   'add-ace-skill'(btn) {
-    const pilot = Store.state.sides[btn.dataset.side].pilots.find(p => p.id === btn.dataset.id);
-    pilot.aceSkills.push('');
+    Store.state.sides[btn.dataset.side].pilots.find(p => p.id === btn.dataset.id).aceSkills.push('');
     Store.commit();
   },
   'remove-ace-skill'(btn) {
-    const pilot = Store.state.sides[btn.dataset.side].pilots.find(p => p.id === btn.dataset.id);
-    pilot.aceSkills.splice(Number(btn.dataset.index), 1);
+    Store.state.sides[btn.dataset.side].pilots.find(p => p.id === btn.dataset.id).aceSkills.splice(Number(btn.dataset.index), 1);
     Store.commit();
   },
-  async 'file-open'() {
-    if (Store.meta.dirty && !confirm('You have changes that are not saved to a file. Open another file anyway?')) return;
-    try { await Store.open(); } catch (e) { if (e.name !== 'AbortError') alert('Could not open file: ' + e.message); }
+  step(btn) {
+    const { obj, key } = resolve(btn.dataset.path);
+    obj[key] = Math.max(0, (Number(obj[key]) || 0) + Number(btn.dataset.delta));
+    Store.commit();
   },
-  async 'file-save'() {
-    try { await Store.save(); } catch (e) { if (e.name !== 'AbortError') alert('Could not save: ' + e.message); }
+  'set-side'(btn) {
+    ui.side = btn.dataset.side;
+    saveUi();
+    render();
   },
-  async 'file-saveas'() {
-    try { await Store.saveAs(); } catch (e) { if (e.name !== 'AbortError') alert('Could not save: ' + e.message); }
+  'set-layout'(btn) {
+    ui.layout = btn.dataset.layout;
+    saveUi();
+    render();
   },
-  'file-new'() {
-    if (!confirm('Start a brand new campaign? Everything in the app now will be cleared (save it to a file first if you want to keep it).')) return;
-    Store.replace(defaultState(), '');
+  'export-backup'() { Store.exportBackup(); },
+  'import-backup'() { Store.importBackup(); },
+  'reset-campaign'() {
+    if (!confirm('Clear the whole campaign and start again? This cannot be undone (export a backup first if unsure).')) return;
+    Store.replace(defaultState());
     location.hash = '#/';
   },
 };
@@ -234,76 +261,69 @@ document.addEventListener('click', e => {
   actions[btn.dataset.act](btn);
 });
 
-document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-    e.preventDefault();
-    actions['file-save']();
-  }
-});
-
-window.addEventListener('beforeunload', e => {
-  if (Store.meta.dirty) e.preventDefault();
-});
-
 // ---------- views ----------
 
-function viewHome() {
+function viewCampaign() {
   const s = Store.state;
   const totals = campaignTotals(s);
   const leader = totals.gb.kills === totals.de.kills ? null : (totals.gb.kills > totals.de.kills ? 'gb' : 'de');
 
-  const rows = MISSIONS.map(m => {
-    const mission = s.missions[m.turn];
-    const sc = SCENARIOS[m.scenario];
-    const result = mission.winner === 'draw' ? 'Draw' : mission.winner ? `${sideTag(mission.winner)} won` : '<span class="muted">Not played</span>';
-    return `<tr>
-      <td>${m.turn}</td>
-      <td><a href="#/mission/${m.turn}"><strong>${esc(m.title)}</strong></a><br><small>${esc(m.month)}</small></td>
-      <td>${m.scenario}: ${esc(sc.name)}</td>
-      <td>${m.attacker ? sideTag(m.attacker) : '<span class="muted">—</span>'}</td>
-      <td>${result}</td>
-      <td class="num">${isPlayed(s, m.turn) ? missionKills(s, m.turn, 'gb') : ''}</td>
-      <td class="num">${isPlayed(s, m.turn) ? missionKills(s, m.turn, 'de') : ''}</td>
-    </tr>`;
+  const missions = MISSIONS.map(m => {
+    const played = isPlayed(s, m.turn);
+    const vp = s.missions[m.turn].vp;
+    return `<a class="row-card" href="#/mission/${m.turn}">
+      <span class="turn-num">${m.turn}</span>
+      <span class="row-main">
+        <span class="row-title">${esc(m.title)}</span>
+        <span class="row-sub">${esc(m.month)} · ${esc(SCENARIOS[m.scenario].name)}</span>
+        ${played ? `<span class="row-sub">Shot down: RAF ${missionKills(s, m.turn, 'gb')} · LW ${missionKills(s, m.turn, 'de')}${vp.gb !== '' || vp.de !== '' ? ` · VP ${vp.gb === '' ? '–' : vp.gb}–${vp.de === '' ? '–' : vp.de}` : ''}</span>` : ''}
+      </span>
+      ${resultChip(m.turn)}
+    </a>`;
   }).join('');
 
-  const squadronCards = SIDE_KEYS.map(side => {
+  const squadrons = SIDE_KEYS.map(side => {
     const pilots = s.sides[side].pilots;
     const active = pilots.filter(p => p.status === 'Active').length;
     const lost = pilots.filter(p => GONE_STATUSES.includes(p.status)).length;
-    const aces = pilots.filter(p => pilotRecord(s, side, p).ace).length;
-    return `<a class="card squadron-card side-${side}" href="#/roster/${side}">
-      <h3>${squadronLabel(side)}</h3>
-      <p>${s.sides[side].player ? 'Player: ' + esc(s.sides[side].player) : '<span class="muted">No player set</span>'}</p>
-      <p><strong>${pilots.length}</strong> pilots · ${active} active · ${lost} lost · ${aces} ${SIDES[side].aceTitle}${aces === 1 ? '' : 's'}</p>
+    return `<a class="row-card squadron-row side-${side}" href="#/roster/${side}">
+      <span class="row-main">
+        <span class="row-title">${esc(squadronName(side))}</span>
+        <span class="row-sub">${pilots.length} pilots · ${active} active · ${lost} lost${s.sides[side].player ? ' · ' + esc(s.sides[side].player) : ''}</span>
+      </span><span class="chev">›</span>
     </a>`;
   }).join('');
 
   return `
     <section class="page-head">
       <p class="eyebrow">Blood Red Skies campaign</p>
-      <h1>${input('campaignName', s.campaignName, { cls: 'title-input' })}</h1>
-      <p class="muted">Eight missions, May to December 1940, one per month. ${POINTS_LIMIT} points per side, two elements each.</p>
+      ${textarea('campaignName', s.campaignName, 2).replace('<textarea', '<textarea class="title-input"')}
     </section>
 
     <section class="scoreboard">
       ${SIDE_KEYS.map(side => `
         <div class="score side-${side} ${leader === side ? 'leading' : ''}">
-          <div class="score-label">${esc(SIDES[side].name)}</div>
+          <div class="score-label">${esc(SIDES[side].short)}</div>
           <div class="score-big">${totals[side].kills}</div>
-          <div class="score-sub">enemy planes shot down · ${totals[side].wins} mission${totals[side].wins === 1 ? '' : 's'} won</div>
+          <div class="score-sub">shot down · ${totals[side].wins} won</div>
         </div>`).join('')}
     </section>
-    <p class="muted small">Campaign victory goes to the squadron that shot down the most enemy planes.</p>
+    <p class="hint">Campaign victory goes to the squadron that shot down the most enemy planes.</p>
 
     <h2>Missions</h2>
-    <div class="table-wrap"><table class="grid">
-      <thead><tr><th>#</th><th>Mission</th><th>Scenario</th><th>Attacker / bombers</th><th>Result</th><th class="num">RAF kills</th><th class="num">LW kills</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
+    <div class="rows">${missions}</div>
 
     <h2>Squadrons</h2>
-    <div class="two-col">${squadronCards}</div>
+    <div class="rows">${squadrons}</div>
+
+    <h2>Reference</h2>
+    <div class="rows"><a class="row-card" href="#/aircraft"><span class="row-main"><span class="row-title">Aircraft cards</span><span class="row-sub">Points for 2 or 3 planes, stats and traits</span></span><span class="chev">›</span></a></div>
+
+    <div class="footer-links">
+      <button class="link" data-act="export-backup">Export backup</button>
+      <button class="link" data-act="import-backup">Import backup</button>
+      <button class="link danger" data-act="reset-campaign">Reset campaign</button>
+    </div>
   `;
 }
 
@@ -313,81 +333,67 @@ function viewRoster(side) {
   const check = squadronCheck(s, side);
   const R = SQUADRON_RULES;
   const issues = [];
-  if (check.foundingCount < R.minPilots) issues.push(`Founding squadron has ${check.foundingCount} pilots; it needs at least ${R.minPilots}.`);
+  if (check.foundingCount && check.foundingCount < R.minPilots) issues.push(`Founding squadron needs at least ${R.minPilots} pilots (has ${check.foundingCount}).`);
   if (check.foundingCount > R.maxPilots) issues.push(`Founding squadron has ${check.foundingCount} pilots; the maximum is ${R.maxPilots}.`);
   if (check.remaining < 0) issues.push(`${-check.remaining} Pilot Skill point${check.remaining === -1 ? '' : 's'} over the ${R.skillPoints}-point budget.`);
-  if (check.onRoster > R.maxPilots) issues.push(`${check.onRoster} pilots on the roster; the maximum squadron size is ${R.maxPilots}.`);
+  if (check.onRoster > R.maxPilots) issues.push(`${check.onRoster} pilots on the roster; the maximum is ${R.maxPilots}.`);
 
-  const pilotRows = sq.pilots.map((p, i) => {
+  const row = p => {
     const rec = pilotRecord(s, side, p);
-    const base = `sides.${side}.pilots.#${p.id}`;
-    const xpHint = START_XP[p.startSkill];
-    const skillOptions = [2, 3, 4, 5].map(k => ({ value: k, label: `${k} ${SKILL_NAME[k]}` }));
-    const joinedOptions = [{ value: 0, label: 'Founding' }, ...MISSIONS.map(m => ({ value: m.turn, label: `After turn ${m.turn}` }))];
-    const badges = [
-      rec.namedAce ? `<span class="badge gold">Named ${SIDES[side].aceTitle}</span>` : rec.ace ? `<span class="badge gold">${SIDES[side].aceTitle}</span>` : '',
-      rec.ace && p.aceSkills.filter(Boolean).length < (rec.namedAce ? 2 : 1) ? '<span class="badge warn" title="Record the ace skill card(s) on the pilot page">needs ace skill</span>' : '',
-    ].join('');
-    return `<tr class="${GONE_STATUSES.includes(p.status) ? 'gone' : ''}">
-      <td>${i + 1}</td>
-      <td>${input(base + '.name', p.name, { attrs: 'placeholder="Pilot name"' })} ${badges}</td>
-      <td>${select(base + '.joined', p.joined, joinedOptions, { dtype: 'int' })}</td>
-      <td>${select(base + '.startSkill', p.startSkill, skillOptions, { dtype: 'int' })}</td>
-      <td>${numInput(base + '.startXp', p.startXp, `min="0" title="${xpHint ? `${xpHint.dice}: ${xpHint.min}–${xpHint.max}` : ''}"`)}<small class="muted">${xpHint ? xpHint.dice : ''}</small></td>
-      <td>${skillBadge(rec.skill)}</td>
-      <td class="num">${rec.xp}</td>
-      <td class="num">${rec.sorties}</td>
-      <td class="num">${rec.kills}</td>
-      <td>${select(base + '.status', p.status, PILOT_STATUSES.map(v => ({ value: v, label: v })), { cls: 'status status-' + p.status })}</td>
-      <td class="actions"><a href="#/pilot/${side}/${p.id}">Details</a>
-        <button class="icon danger" title="Delete pilot" data-act="delete-pilot" data-side="${side}" data-id="${p.id}">✕</button></td>
-    </tr>`;
-  }).join('');
+    const ace = rec.namedAce ? `Named ${SIDES[side].aceTitle}` : rec.ace ? SIDES[side].aceTitle : '';
+    return `<a class="row-card pilot-row ${GONE_STATUSES.includes(p.status) ? 'gone' : ''}" href="#/pilot/${side}/${p.id}">
+      ${skillBadge(rec.skill)}
+      <span class="row-main">
+        <span class="row-title">${esc(p.name || '(unnamed)')} ${ace ? `<span class="badge gold">${ace}</span>` : ''}</span>
+        <span class="row-sub">${rec.xp} XP · ${rec.kills} kill${rec.kills === 1 ? '' : 's'} · ${rec.sorties} sortie${rec.sorties === 1 ? '' : 's'}</span>
+      </span>
+      ${p.status !== 'Active' ? `<span class="chip status-${p.status}">${esc(p.status)}</span>` : ''}
+      <span class="chev">›</span>
+    </a>`;
+  };
+  const current = sq.pilots.filter(p => !GONE_STATUSES.includes(p.status));
+  const gone = sq.pilots.filter(p => GONE_STATUSES.includes(p.status));
 
   return `
     <section class="page-head side-${side}">
-      <p class="eyebrow">${esc(SIDES[side].nation)} · Squadron roster</p>
-      <h1>${squadronLabel(side)}</h1>
-      <div class="form-row">
-        <label>Squadron name ${input(`sides.${side}.squadronName`, sq.squadronName, { attrs: `placeholder="e.g. ${side === 'gb' ? 'No. 54 Squadron' : 'II./JG 26'}"` })}</label>
-        <label>Player ${input(`sides.${side}.player`, sq.player)}</label>
-      </div>
+      <p class="eyebrow">${esc(SIDES[side].nation)} · Roster</p>
+      <h1>${esc(squadronName(side))}</h1>
     </section>
 
-    <section class="panel">
-      <div class="stats-row">
-        <div><span class="stat">${check.foundingCount}</span> founding pilots <small>(${R.minPilots}–${R.maxPilots})</small></div>
-        <div><span class="stat">${check.foundingPoints}</span> skill points on founders</div>
-        <div><span class="stat">${check.upgradePoints}</span> spent upgrading replacements</div>
-        <div><span class="stat ${check.remaining < 0 ? 'bad' : ''}">${check.remaining}</span> of ${R.skillPoints} left</div>
-        <div><span class="stat ${check.onRoster > R.maxPilots ? 'bad' : ''}">${check.onRoster}</span> on roster <small>(max ${R.maxPilots})</small></div>
-      </div>
-      ${issues.length ? `<ul class="issues">${issues.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-      <p class="small muted">Founding pilots start at skill 2–5 from a ${R.skillPoints}-point budget. Up to ${R.maxReplacements} Rookie replacements arrive at the end of each month; leftover points can raise a replacement to skill 3 (counts as 1 point each).
-      Current skill and XP are worked out from starting values plus every recorded mission.</p>
-    </section>
+    <details class="panel">
+      <summary>Squadron details</summary>
+      <label class="block">Squadron name ${input(`sides.${side}.squadronName`, sq.squadronName, { attrs: `placeholder="${side === 'gb' ? 'e.g. No. 54 Squadron' : 'e.g. II./JG 26'}"` })}</label>
+      <label class="block">Player ${input(`sides.${side}.player`, sq.player)}</label>
+      <p class="hint">Founding pilots: ${R.minPilots}–${R.maxPilots}, skill 2–5, ${R.skillPoints} skill points in total. Up to ${R.maxReplacements} Rookie replacements join at the end of each month; leftover points can raise a replacement to skill 3.</p>
+    </details>
 
-    <div class="table-wrap"><table class="grid roster">
-      <thead><tr><th>#</th><th>Pilot</th><th>Joined</th><th>Start skill</th><th>Start XP</th><th>Skill</th><th class="num">XP</th><th class="num">Sorties</th><th class="num">Kills</th><th>Status</th><th></th></tr></thead>
-      <tbody>${pilotRows || `<tr><td colspan="11" class="muted center">No pilots yet.</td></tr>`}</tbody>
-    </table></div>
-    <div class="button-row">
-      <button data-act="add-pilot" data-side="${side}" data-joined="0">+ Add founding pilot</button>
-      <button data-act="add-pilot" data-side="${side}" data-joined="${lastPlayedTurn() || 1}">+ Add replacement</button>
+    <div class="mini-stats">
+      <div><b>${check.onRoster}</b><span>on roster</span></div>
+      <div><b>${check.foundingCount}</b><span>founders</span></div>
+      <div><b class="${check.remaining < 0 ? 'bad' : ''}">${check.remaining}</b><span>skill pts left</span></div>
     </div>
+    ${issues.length ? `<ul class="issues">${issues.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+
+    <div class="rows">${current.map(row).join('') || '<p class="empty">No pilots yet.</p>'}</div>
+    <div class="button-row">
+      <button data-act="add-pilot" data-side="${side}" data-joined="0">+ Founding pilot</button>
+      <button data-act="add-pilot" data-side="${side}" data-joined="${lastPlayedTurn() || 1}">+ Replacement</button>
+    </div>
+
+    ${gone.length ? `<h2>Lost</h2><div class="rows">${gone.map(row).join('')}</div>` : ''}
 
     <details class="panel reference"><summary>Experience rules</summary>
       <table class="rules-table">
-        <tr><th>Level</th><th>XP</th><th>Starting XP</th><th>List cost</th></tr>
-        ${[2, 3, 4, 5].map(k => `<tr><td>${k} ${SKILL_NAME[k]}</td><td>${{ 2: '0–9', 3: '10–25', 4: '26–50', 5: '51+' }[k]}</td><td>${START_XP[k].dice}</td><td>+${PILOT_COST[k]} pts</td></tr>`).join('')}
+        <tr><th>Level</th><th>XP</th><th>Start XP</th><th>Cost</th></tr>
+        ${[2, 3, 4, 5].map(k => `<tr><td>${k} ${SKILL_NAME[k]}</td><td>${{ 2: '0–9', 3: '10–25', 4: '26–50', 5: '51+' }[k]}</td><td>${START_XP[k].dice}</td><td>+${PILOT_COST[k]}</td></tr>`).join('')}
       </table>
       <ul>
-        <li>Survived mission +5 xp <em>(Rookie and Average only)</em></li>
-        <li>Squadron is victorious +5 xp <em>(Rookie and Average only)</em></li>
-        <li>Each boom chit inflicted on the enemy +1 xp <em>(Rookie and Average only)</em></li>
-        <li>Each shooting hit +5 xp <em>(not if dodged)</em></li>
-        <li>Each enemy plane shot down +5 xp <em>(cumulative with the hit)</em></li>
-        <li>51 XP or ${ACE_KILLS} kills: ${SIDES[side].aceTitle} — Pilot Skill 5 and one ace skill card. ${NAMED_ACE_KILLS} kills: Named ${SIDES[side].aceTitle} — a second ace skill and +1 Firepower or Agility.</li>
+        <li>Survived mission +5 <em>(Rookie/Average only)</em></li>
+        <li>Squadron victorious +5 <em>(Rookie/Average only)</em></li>
+        <li>Each boom chit inflicted +1 <em>(Rookie/Average only)</em></li>
+        <li>Each shooting hit +5 <em>(not if dodged)</em></li>
+        <li>Each enemy plane shot down +5 <em>(on top of the hit)</em></li>
+        <li>51 XP or ${ACE_KILLS} kills: ${SIDES[side].aceTitle} (skill 5, one ace skill). ${NAMED_ACE_KILLS} kills: Named ${SIDES[side].aceTitle} (second ace skill, +1 FP or AG).</li>
       </ul>
     </details>
   `;
@@ -402,74 +408,68 @@ function lastPlayedTurn() {
 function viewPilot(side, id) {
   const s = Store.state;
   const p = s.sides[side].pilots.find(x => x.id === id);
-  if (!p) return `<p>Pilot not found. <a href="#/roster/${side}">Back to roster</a></p>`;
+  if (!p) return `<p class="empty">Pilot not found. <a href="#/roster/${side}">Back to roster</a></p>`;
   const rec = pilotRecord(s, side, p);
   const base = `sides.${side}.pilots.#${p.id}`;
   const aceTitle = SIDES[side].aceTitle;
   const fateLabel = key => (FATES.find(f => f.key === key) || FATES[0]).label;
+  const joinedOptions = [{ value: 0, label: 'Founding' }, ...MISSIONS.map(m => ({ value: m.turn, label: `After turn ${m.turn}` }))];
 
   const aceSkills = p.aceSkills.map((skill, i) => `
     <div class="inline-row">${input(`${base}.aceSkills.${i}`, skill, { attrs: 'placeholder="Ace skill card"' })}
-      <button class="icon danger" data-act="remove-ace-skill" data-side="${side}" data-id="${p.id}" data-index="${i}" title="Remove">✕</button></div>`).join('');
+      <button class="icon danger" data-act="remove-ace-skill" data-side="${side}" data-id="${p.id}" data-index="${i}" aria-label="Remove">✕</button></div>`).join('');
 
   const history = rec.history.map(h => {
     const m = missionDef(h.turn);
-    return `<tr>
-      <td><a href="#/mission/${h.turn}">${h.turn}. ${esc(m.title)}</a></td>
-      <td>${esc(h.plane)}</td>
-      <td>${skillBadge(h.skillAtStart)}</td>
-      <td class="num">${h.result.hits}</td>
-      <td class="num">${h.result.kills}</td>
-      <td class="num">${h.result.boom}</td>
-      <td>${h.won ? 'Won' : s.missions[h.turn].winner === 'draw' ? 'Draw' : 'Lost'}</td>
-      <td>${h.result.survived ? 'Yes' : 'No'}</td>
-      <td>${esc(fateLabel(h.result.fate))}</td>
-      <td class="num"><strong>+${h.gained}</strong></td>
-    </tr>`;
+    const outcome = h.won ? 'Won' : s.missions[h.turn].winner === 'draw' ? 'Draw' : 'Lost';
+    return `<a class="row-card" href="#/mission/${h.turn}/debrief">
+      <span class="turn-num">${h.turn}</span>
+      <span class="row-main">
+        <span class="row-title">${esc(m.title)} <small class="muted">${esc(h.plane)}</small></span>
+        <span class="row-sub">${outcome} · ${h.result.hits} hits · ${h.result.kills} kills · ${h.result.boom} boom${h.result.fate ? ' · ' + esc(fateLabel(h.result.fate)) : ''}</span>
+      </span>
+      <span class="xp-gain">+${h.gained}</span>
+    </a>`;
   }).join('');
 
   return `
-    <p class="crumb"><a href="#/roster/${side}">← ${squadronLabel(side)}</a></p>
+    <p class="crumb"><a href="#/roster/${side}">‹ ${esc(squadronName(side))}</a></p>
     <section class="page-head side-${side}">
-      <p class="eyebrow">${esc(SIDES[side].nation)} · Pilot</p>
-      <h1>${input(base + '.name', p.name, { cls: 'title-input', attrs: 'placeholder="Pilot name"' })}</h1>
-      <div class="stats-row">
+      ${input(base + '.name', p.name, { cls: 'title-input', attrs: 'placeholder="Pilot name"' })}
+      <div class="mini-stats">
         <div>${skillBadge(rec.skill)}</div>
-        <div><span class="stat">${rec.xp}</span> XP</div>
-        <div><span class="stat">${rec.sorties}</span> sorties</div>
-        <div><span class="stat">${rec.kills}</span> kills</div>
-        <div>${rec.namedAce ? `<span class="badge gold">Named ${aceTitle}</span>` : rec.ace ? `<span class="badge gold">${aceTitle}</span>` : ''}</div>
+        <div><b>${rec.xp}</b><span>XP</span></div>
+        <div><b>${rec.kills}</b><span>kills</span></div>
+        <div><b>${rec.sorties}</b><span>sorties</span></div>
       </div>
+      ${rec.namedAce ? `<span class="badge gold">Named ${aceTitle}</span>` : rec.ace ? `<span class="badge gold">${aceTitle}</span>` : ''}
     </section>
 
     <section class="panel form-grid">
       <label>Status ${select(base + '.status', p.status, PILOT_STATUSES.map(v => ({ value: v, label: v })))}</label>
-      <label>Joined ${select(base + '.joined', p.joined, [{ value: 0, label: 'Founding' }, ...MISSIONS.map(m => ({ value: m.turn, label: `After turn ${m.turn}` }))], { dtype: 'int' })}</label>
+      <label>Joined ${select(base + '.joined', p.joined, joinedOptions, { dtype: 'int' })}</label>
       <label>Starting skill ${select(base + '.startSkill', p.startSkill, [2, 3, 4, 5].map(k => ({ value: k, label: `${k} ${SKILL_NAME[k]}` })), { dtype: 'int' })}</label>
-      <label>Starting XP ${numInput(base + '.startXp', p.startXp, 'min="0"')}<small class="muted">${START_XP[p.startSkill] ? START_XP[p.startSkill].dice : ''}</small></label>
-      <label>XP adjustment ${numInput(base + '.xpAdjust', p.xpAdjust)}<small class="muted">Manual correction outside missions</small></label>
-      <label>Kills adjustment ${numInput(base + '.killsAdjust', p.killsAdjust)}<small class="muted">Manual correction outside missions</small></label>
+      <label>Starting XP <span class="muted small">${START_XP[p.startSkill] ? START_XP[p.startSkill].dice : ''}</span>${numInput(base + '.startXp', p.startXp, 'min="0"')}</label>
+      <label>XP adjustment ${numInput(base + '.xpAdjust', p.xpAdjust)}</label>
+      <label>Kills adjustment ${numInput(base + '.killsAdjust', p.killsAdjust)}</label>
     </section>
 
     <section class="panel">
       <h3>Ace skills</h3>
-      ${rec.ace ? '' : `<p class="small muted">Pilots become ${aceTitle}s (Pilot Skill 5) at 51 XP or ${ACE_KILLS} kills and draw an ace skill card.</p>`}
+      ${rec.ace ? '' : `<p class="hint">${aceTitle}s (skill 5, at 51 XP or ${ACE_KILLS} kills) draw an ace skill card.</p>`}
       ${aceSkills}
-      <button data-act="add-ace-skill" data-side="${side}" data-id="${p.id}">+ Add ace skill</button>
+      <button data-act="add-ace-skill" data-side="${side}" data-id="${p.id}">+ Ace skill</button>
       ${rec.namedAce || p.namedAceBonus ? `<label class="block">Named ${aceTitle} bonus ${select(base + '.namedAceBonus', p.namedAceBonus, [{ value: '', label: '— choose —' }, { value: 'Firepower', label: '+1 Firepower' }, { value: 'Agility', label: '+1 Agility' }])}</label>` : ''}
     </section>
 
     <section class="panel">
       <h3>Notes</h3>
-      ${textarea(base + '.notes', p.notes, 4)}
+      ${textarea(base + '.notes', p.notes, 3)}
     </section>
 
-    <h2>Mission history</h2>
-    <div class="table-wrap"><table class="grid">
-      <thead><tr><th>Mission</th><th>Plane</th><th>Skill</th><th class="num">Hits</th><th class="num">Kills</th><th class="num">Boom</th><th>Result</th><th>Survived</th><th>Fate</th><th class="num">XP</th></tr></thead>
-      <tbody>${history || '<tr><td colspan="10" class="muted center">No missions flown yet.</td></tr>'}</tbody>
-    </table></div>
-    <p class="button-row"><button class="danger" data-act="delete-pilot" data-side="${side}" data-id="${p.id}">Delete pilot</button></p>
+    <h2>Missions flown</h2>
+    <div class="rows">${history || '<p class="empty">None yet.</p>'}</div>
+    <div class="button-row"><button class="danger" data-act="delete-pilot" data-side="${side}" data-id="${p.id}">Delete pilot</button></div>
   `;
 }
 
@@ -482,7 +482,7 @@ function pilotOptions(state, turn, side, el, seatIndex) {
   for (const p of state.sides[side].pilots) {
     if (Number(p.joined) >= turn && p.id !== current) continue;
     const skill = pilotRecord(state, side, p, turn).skill;
-    const label = `${p.name || '(unnamed)'} — ${SKILL_NAME[skill]}, ${PILOT_COST[skill]} pts`;
+    const label = `${p.name || '(unnamed)'} — ${SKILL_NAME[skill]} ${PILOT_COST[skill]}`;
     const opt = { value: p.id, label, disabled: seatedElsewhere.has(p.id) };
     if (p.status === 'Active') available.push(opt);
     else unavailable.push(Object.assign(opt, { label: `${label} (${p.status})` }));
@@ -492,8 +492,56 @@ function pilotOptions(state, turn, side, el, seatIndex) {
   return options;
 }
 
-function viewListBuilder(turn, side) {
+function missionOverview(turn) {
   const s = Store.state;
+  const m = missionDef(turn);
+  const sc = SCENARIOS[m.scenario];
+  const mission = s.missions[turn];
+  const played = isPlayed(s, turn);
+  return `
+    <p class="scenario-line">Scenario ${m.scenario}: <strong>${esc(sc.name)}</strong></p>
+    <p class="scenario-line">Attacker / bomber side: ${m.attacker ? sideTag(m.attacker) : 'none'}${sc.bombers && m.attacker ? ' · free bombers (not tracked)' : ''}</p>
+    <p class="blurb">${esc(m.blurb)}</p>
+
+    <section class="panel">
+      <h3>Result</h3>
+      ${pills(`missions.${turn}.winner`, mission.winner, [
+        { value: '', label: 'Not played' },
+        { value: 'gb', label: 'RAF won', cls: 'side-gb' },
+        { value: 'de', label: 'LW won', cls: 'side-de' },
+        { value: 'draw', label: 'Draw' },
+      ])}
+      <table class="result-table">
+        <tr><th></th>${SIDE_KEYS.map(side => `<th>${sideTag(side)}</th>`).join('')}</tr>
+        <tr><td>Victory points</td>${SIDE_KEYS.map(side => `<td>${input(`missions.${turn}.vp.${side}`, mission.vp[side], { type: 'number', dtype: 'optint', cls: 'num', attrs: 'inputmode="numeric"' })}</td>`).join('')}</tr>
+        <tr><td>Enemy planes shot down</td>${SIDE_KEYS.map(side => `<td class="num"><b>${played ? missionKills(s, turn, side) : '–'}</b></td>`).join('')}</tr>
+        <tr><td>List points</td>${SIDE_KEYS.map(side => `<td class="num">${listCost(s, turn, side)}</td>`).join('')}</tr>
+      </table>
+      <p class="hint">Planes shot down are totalled from the pilots' kills on the Debrief tab.</p>
+    </section>
+
+    <section class="panel">
+      <h3>Notes</h3>
+      ${textarea(`missions.${turn}.notes`, mission.notes, 4, 'Anything worth remembering about this mission…')}
+    </section>
+  `;
+}
+
+function missionRules(turn) {
+  const sc = SCENARIOS[missionDef(turn).scenario];
+  return `
+    <div class="rules">
+      <p class="hint">BRS: Air Strike! p.${sc.page}</p>
+      ${renderRules(sc.body)}
+      <details class="nested"><summary>Common rules: Deploying by Elements &amp; High Cover <small>(p.${COMMON_SCENARIO_RULES.page})</small></summary>
+        ${renderRules(COMMON_SCENARIO_RULES.body)}
+      </details>
+    </div>`;
+}
+
+function missionLists(turn) {
+  const s = Store.state;
+  const side = ui.side;
   const list = s.missions[turn].lists[side];
   const total = listCost(s, turn, side);
   const pct = Math.min(100, (total / POINTS_LIMIT) * 100);
@@ -503,186 +551,189 @@ function viewListBuilder(turn, side) {
     const base = `missions.${turn}.lists.${side}.elements.${i}`;
     const plane = PLANES[el.plane];
     const cost = elementCost(s, turn, side, el);
-    const seats = el.pilots.map((id, seat) => `
-      <li>${select(`${base}.pilots.${seat}`, id || '', pilotOptions(s, turn, side, el, seat), { dtype: 'nullstr' })}</li>`).join('');
-    return `<div class="element">
+    return `<div class="element side-${side}">
       <div class="element-head">
         <strong>Element ${i + 1}</strong>
-        <button class="icon danger" title="Remove element" data-act="remove-element" data-turn="${turn}" data-side="${side}" data-index="${i}">✕</button>
+        <span class="muted">${cost.total} pts</span>
+        <button class="icon danger" aria-label="Remove element" data-act="remove-element" data-turn="${turn}" data-side="${side}" data-index="${i}">✕</button>
       </div>
       <div class="element-body">
-        ${plane ? `<img class="card-thumb" src="${encodeURI(plane.card)}" alt="${esc(plane.name)} card">` : '<div class="card-thumb empty">No aircraft</div>'}
-        <div class="element-fields">
-          ${select(base + '.plane', el.plane, planeOptions)}
-          <div class="size-pick">
-            ${[2, 3].map(n => `<label class="pill ${el.size === n ? 'on' : ''}"><input type="radio" name="${fieldId(base)}-size" data-path="${base}.size" data-type="int" value="${n}" ${el.size === n ? 'checked' : ''}>${n} planes${plane ? ` · ${plane.cost[n]} pts` : ''}</label>`).join('')}
-          </div>
-          ${plane ? `<p class="small muted">FP ${plane.fp} · AG ${plane.ag} · SPD ${plane.spd} · ${esc(plane.traits.join(', '))}</p>` : ''}
-          <ol class="seats">${seats}</ol>
-          <p class="small">Planes ${cost.planes} + pilots ${cost.pilots} = <strong>${cost.total} pts</strong></p>
-        </div>
+        ${select(base + '.plane', el.plane, planeOptions)}
+        ${plane ? `<div class="plane-line"><img class="card-thumb" src="${encodeURI(plane.card)}" alt="${esc(plane.name)} card"><span class="small muted">FP ${plane.fp} · AG ${plane.ag} · SPD ${plane.spd}<br>${esc(plane.traits.join(', '))}</span></div>` : ''}
+        ${pills(base + '.size', el.size, [2, 3].map(n => ({ value: n, label: `${n} planes${plane ? ` · ${plane.cost[n]}` : ''}` })), 'int')}
+        <ol class="seats">${el.pilots.map((id, seat) => `<li>${select(`${base}.pilots.${seat}`, id || '', pilotOptions(s, turn, side, el, seat), { dtype: 'nullstr' })}</li>`).join('')}</ol>
+        <p class="small muted">Planes ${cost.planes} + pilots ${cost.pilots}</p>
       </div>
     </div>`;
   }).join('');
 
-  return `<div class="list side-${side}">
-    <h3>${squadronLabel(side)}</h3>
-    <div class="points ${total > POINTS_LIMIT ? 'over' : ''}">
+  return `
+    ${sideSwitch()}
+    <div class="points-sticky ${total > POINTS_LIMIT ? 'over' : ''}">
       <div class="points-bar"><span style="width:${pct}%"></span></div>
-      <div><strong>${total}</strong> / ${POINTS_LIMIT} pts ${total > POINTS_LIMIT ? `— ${total - POINTS_LIMIT} over` : `— ${POINTS_LIMIT - total} left`}</div>
+      <div><strong>${total}</strong> / ${POINTS_LIMIT} pts · ${total > POINTS_LIMIT ? `${total - POINTS_LIMIT} over` : `${POINTS_LIMIT - total} left`}</div>
     </div>
-    ${list.elements.length !== 2 ? `<p class="small warn-text">${list.elements.length} element${list.elements.length === 1 ? '' : 's'} (normally two).</p>` : ''}
+    ${list.elements.length !== 2 ? `<p class="hint warn-text">${list.elements.length} element${list.elements.length === 1 ? '' : 's'} (normally two).</p>` : ''}
     ${elements}
-    <button data-act="add-element" data-turn="${turn}" data-side="${side}">+ Add element</button>
-  </div>`;
+    <button class="wide" data-act="add-element" data-turn="${turn}" data-side="${side}">+ Add element</button>
+  `;
 }
 
-function viewDebrief(turn, side) {
+function missionDebrief(turn) {
   const s = Store.state;
-  const ids = seatedPilotIds(s, turn, side);
+  const side = ui.side;
+  const played = isPlayed(s, turn);
   const won = s.missions[turn].winner === side;
-  const rows = ids.map(id => {
+  const cards = seatedPilotIds(s, turn, side).map(id => {
     const found = findPilot(s, id);
     if (!found) return '';
     const p = found.pilot;
     const skill = pilotRecord(s, side, p, turn).skill;
     const r = resultFor(s, turn, id);
     const base = `missions.${turn}.results.${id}`;
-    return `<tr>
-      <td><a href="#/pilot/${side}/${id}">${esc(p.name || '(unnamed)')}</a><br><small class="muted">${esc(planeFlownBy(s, turn, side, id))}</small></td>
-      <td>${skillBadge(skill)}</td>
-      <td class="center">${checkbox(base + '.survived', r.survived)}</td>
-      <td>${numInput(base + '.boom', r.boom, 'min="0"')}</td>
-      <td>${numInput(base + '.hits', r.hits, 'min="0"')}</td>
-      <td>${numInput(base + '.kills', r.kills, 'min="0"')}</td>
-      <td>${select(base + '.fate', r.fate, FATES.map(f => ({ value: f.key, label: f.label })))}</td>
-      <td>${numInput(base + '.xpAdjust', r.xpAdjust)}</td>
-      <td class="num"><strong>+${isPlayed(s, turn) ? missionXp(r, skill, won) : '—'}</strong></td>
-    </tr>`;
+    return `<div class="pilot-card side-${side}">
+      <div class="pilot-card-head">
+        ${skillBadge(skill)}
+        <span class="row-main">
+          <a class="row-title" href="#/pilot/${side}/${id}">${esc(p.name || '(unnamed)')}</a>
+          <span class="row-sub">${esc(planeFlownBy(s, turn, side, id))}</span>
+        </span>
+        <span class="xp-gain" title="XP from this mission">${played ? '+' + missionXp(r, skill, won) + ' XP' : '–'}</span>
+      </div>
+      ${stepper(base + '.hits', r.hits, 'Hits')}
+      ${stepper(base + '.kills', r.kills, 'Kills')}
+      ${stepper(base + '.boom', r.boom, 'Boom chits')}
+      <div class="card-row">
+        <label class="check"><input type="checkbox" data-path="${base}.survived" data-type="bool" ${r.survived ? 'checked' : ''}> Survived</label>
+        ${select(base + '.fate', r.fate, FATES.map(f => ({ value: f.key, label: f.label })))}
+      </div>
+      <details class="nested"><summary>XP adjustment ${r.xpAdjust ? `(${r.xpAdjust > 0 ? '+' : ''}${r.xpAdjust})` : ''}</summary>${numInput(base + '.xpAdjust', r.xpAdjust)}</details>
+    </div>`;
   }).join('');
 
-  return `<div class="debrief side-${side}">
-    <h3>${squadronLabel(side)} <small>${isPlayed(s, turn) ? missionKills(s, turn, side) + ' enemy planes shot down' : ''}</small></h3>
-    <div class="table-wrap"><table class="grid compact">
-      <thead><tr><th>Pilot</th><th>Skill</th><th title="Survived the mission">Surv.</th><th title="Boom chits inflicted on the enemy">Boom</th><th title="Shooting hits scored (not dodged)">Hits</th><th>Kills</th><th>Fate</th><th title="Manual XP adjustment">Adj.</th><th class="num">XP</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="9" class="muted center">Pick pilots in the list above first.</td></tr>'}</tbody>
-    </table></div>
-  </div>`;
+  return `
+    ${sideSwitch()}
+    <p class="hint">${played ? `${missionKills(s, turn, side)} enemy planes shot down.` : 'Set the result on the Overview tab for XP and kills to count.'}</p>
+    ${cards || '<p class="empty">No pilots in this list yet. Add them on the Lists tab.</p>'}
+    <p class="hint">Setting a fate also updates the pilot's status on the roster.</p>
+  `;
 }
 
-function viewMission(turn) {
-  const s = Store.state;
+function viewMission(turn, tab) {
   const m = missionDef(turn);
-  if (!m) return '<p>Mission not found.</p>';
-  const mission = s.missions[turn];
-  const sc = SCENARIOS[m.scenario];
-  const prev = missionDef(turn - 1);
-  const next = missionDef(turn + 1);
-
-  let bomberNote = '';
-  if (sc.bombers && m.attacker) {
-    bomberNote = `<p class="callout">${esc(SIDES[m.attacker].name)} receives free bombers this mission (not tracked here).</p>`;
-  }
-
+  if (!m) return '<p class="empty">Mission not found.</p>';
+  const views = { overview: missionOverview, rules: missionRules, lists: missionLists, debrief: missionDebrief };
+  const current = views[tab] ? tab : 'overview';
+  const pickerInHeader = ui.layout === 'a';
   return `
-    <nav class="pager">
-      ${prev ? `<a href="#/mission/${prev.turn}">← ${prev.turn}. ${esc(prev.title)}</a>` : '<span></span>'}
-      ${next ? `<a href="#/mission/${next.turn}">${next.turn}. ${esc(next.title)} →</a>` : '<span></span>'}
-    </nav>
-    <section class="page-head">
-      <p class="eyebrow">Turn ${m.turn} · ${esc(m.month)}</p>
-      <h1>${esc(m.title)}</h1>
-      <p class="scenario-line">Scenario ${m.scenario}: <strong>${esc(sc.name)}</strong> · Attacker / bomber side: ${m.attacker ? sideTag(m.attacker) : 'none'}</p>
-      <p class="blurb">${esc(m.blurb)}</p>
-      ${bomberNote}
-    </section>
-
-    ${details(`rules-${turn}`, `Scenario rules — ${esc(sc.name)} <small>(Air Strike! p.${sc.page})</small>`,
-      `<div class="rules">${renderRules(sc.body)}</div>` +
-      details('common-rules', `Common scenario rules: Deploying by Elements &amp; High Cover <small>(p.${COMMON_SCENARIO_RULES.page})</small>`,
-        `<div class="rules">${renderRules(COMMON_SCENARIO_RULES.body)}</div>`, 'nested'),
-      'panel rules-panel')}
-
-    ${details('lists', `Lists <small>${SIDE_KEYS.map(side => `${SIDES[side].short} ${listCost(s, turn, side)}/${POINTS_LIMIT}`).join(' · ')}</small>`,
-      `<div class="two-col">${SIDE_KEYS.map(side => viewListBuilder(turn, side)).join('')}</div>`, 'panel')}
-
-    ${details('debrief', 'Debrief &amp; results',
-      `<div class="form-row">
-        <label>Result ${select(`missions.${turn}.winner`, mission.winner, [
-          { value: '', label: 'Not played yet' },
-          { value: 'gb', label: `${SIDES.gb.name} won` },
-          { value: 'de', label: `${SIDES.de.name} won` },
-          { value: 'draw', label: 'Draw' },
-        ])}</label>
-      </div>
-      ${isPlayed(s, turn) ? '' : '<p class="small muted">XP and kills only count once a result is set.</p>'}
-      <div class="debriefs">${SIDE_KEYS.map(side => viewDebrief(turn, side)).join('')}</div>
-      <p class="small muted">Recording a fate also updates the pilot's status on the roster. After the month, injured pilots recover and up to ${SQUADRON_RULES.maxReplacements} Rookie replacements join; add them on each squadron page.</p>
-      <label class="block">Mission notes ${textarea(`missions.${turn}.notes`, mission.notes, 4)}</label>`, 'panel')}
+    ${pickerInHeader ? '' : `<section class="page-head"><p class="eyebrow">Turn ${m.turn} · ${esc(m.month)}</p><h1>${esc(m.title)}</h1></section>`}
+    <nav class="tabs">${MISSION_TABS.map(t => `<a class="${t.key === current ? 'on' : ''}" href="#/mission/${turn}/${t.key}">${t.label}</a>`).join('')}</nav>
+    <div class="tab-body">${views[current](turn)}</div>
   `;
 }
 
 function viewAircraft() {
   return `
     <section class="page-head"><p class="eyebrow">Reference</p><h1>Aircraft</h1>
-      <p class="muted">Each card is one element of two or three planes. Pilots are bought on top: ${[2, 3, 4, 5].map(k => `${SKILL_NAME[k]} +${PILOT_COST[k]}`).join(', ')}.</p></section>
+      <p class="hint">Each card is one element of 2 or 3 planes. Pilots cost extra: ${[2, 3, 4, 5].map(k => `${SKILL_NAME[k]} +${PILOT_COST[k]}`).join(', ')}.</p></section>
     ${SIDE_KEYS.map(side => `
       <h2>${esc(SIDES[side].name)}</h2>
-      <div class="aircraft-grid">
-        ${Object.values(PLANES).filter(p => p.side === side).map(p => `
-          <figure class="aircraft">
-            <img src="${encodeURI(p.card)}" alt="${esc(p.name)} card">
-            <figcaption><strong>${esc(p.maker)} ${esc(p.name)}</strong> — 2 planes ${p.cost[2]} pts · 3 planes ${p.cost[3]} pts</figcaption>
-          </figure>`).join('')}
-      </div>`).join('')}
+      ${Object.values(PLANES).filter(p => p.side === side).map(p => `
+        <figure class="aircraft">
+          <img src="${encodeURI(p.card)}" alt="${esc(p.name)} card">
+          <figcaption><strong>${esc(p.name)}</strong> · 2 for ${p.cost[2]} · 3 for ${p.cost[3]}</figcaption>
+        </figure>`).join('')}`).join('')}
   `;
 }
 
-// ---------- shell ----------
+// ---------- shell & layouts ----------
 
-function renderNav(route) {
-  const s = Store.state;
-  const link = (href, label, extra = '') => `<a href="${href}" class="${location.hash === href || (href === '#/' && !location.hash) ? 'active' : ''}">${label}${extra}</a>`;
-  nav.innerHTML = `
-    <div class="nav-group">
-      ${link('#/', 'Campaign')}
-    </div>
-    <div class="nav-group"><div class="nav-title">Squadrons</div>
-      ${SIDE_KEYS.map(side => link(`#/roster/${side}`, esc(s.sides[side].squadronName || SIDES[side].name), ` <span class="dot side-${side}"></span>`)).join('')}
-    </div>
-    <div class="nav-group"><div class="nav-title">Missions</div>
-      ${MISSIONS.map(m => {
-        const w = s.missions[m.turn].winner;
-        const mark = w ? `<span class="result-mark ${w === 'draw' ? '' : 'side-' + w}">${w === 'draw' ? 'D' : SIDES[w].short === 'RAF' ? 'RAF' : 'LW'}</span>` : '';
-        return link(`#/mission/${m.turn}`, `<span class="turn">${m.turn}</span> ${esc(m.title)}`, mark);
-      }).join('')}
-    </div>
-    <div class="nav-group">
-      ${link('#/aircraft', 'Aircraft')}
-    </div>
-  `;
+function parseRoute() {
+  const parts = (location.hash || '#/').slice(2).split('/');
+  return { name: parts[0] || 'campaign', a: parts[1], b: parts[2] };
 }
 
-function renderFileStatus() {
-  const el = document.getElementById('file-status');
-  const name = Store.meta.fileName || 'not saved to a file';
-  el.innerHTML = `<span class="file-name">${esc(name)}</span>${Store.meta.dirty ? ' <span class="unsaved" title="Changes are autosaved in this browser but not yet saved to the file">● unsaved</span>' : ''}`;
+function missionPicker(turn, tab) {
+  const options = MISSIONS.map(m => ({ value: `#/mission/${m.turn}/${tab}`, label: `${m.turn}. ${m.title} — ${m.month}` }));
+  return `<select class="title-select" data-nav aria-label="Mission">${optionsHtml(options, `#/mission/${turn}/${tab}`)}</select>`;
+}
+
+// Layout A: header shows where you are; bottom tab bar to switch section.
+function headerA(route) {
+  let title;
+  if (route.name === 'mission') title = missionPicker(Number(route.a), route.b || 'overview');
+  else if (route.name === 'roster') title = `<span class="title-text">${esc(squadronName(route.a))}</span>`;
+  else if (route.name === 'pilot') title = `<span class="title-text">${esc(squadronName(route.a))}</span>`;
+  else if (route.name === 'aircraft') title = '<span class="title-text">Aircraft</span>';
+  else title = '<span class="title-text">Blood Red Skies</span>';
+  return `<header class="appbar">${title}${layoutSwitch()}</header>`;
+}
+
+function bottomBar(route) {
+  const section = route.name === 'mission' ? 'missions'
+    : route.name === 'roster' || route.name === 'pilot' ? 'roster-' + route.a
+    : 'campaign';
+  const tabs = [
+    { key: 'campaign', href: '#/', icon: '★', label: 'Campaign' },
+    { key: 'missions', href: '#/missions', icon: '✈', label: 'Missions' },
+    { key: 'roster-gb', href: '#/roster/gb', icon: '◎', label: 'RAF', cls: 'side-gb' },
+    { key: 'roster-de', href: '#/roster/de', icon: '✠', label: 'Luftwaffe', cls: 'side-de' },
+  ];
+  return `<nav class="bottombar">${tabs.map(t => `<a href="${t.href}" class="${t.cls || ''} ${section === t.key ? 'on' : ''}"><span class="bb-icon">${t.icon}</span>${t.label}</a>`).join('')}</nav>`;
+}
+
+// Layout B: one dropdown to jump anywhere.
+function headerB(route) {
+  let current = '#/';
+  if (route.name === 'mission') current = `#/mission/${route.a}`;
+  else if (route.name === 'roster' || route.name === 'pilot') current = `#/roster/${route.a}`;
+  else if (route.name === 'aircraft') current = '#/aircraft';
+  const options = [
+    { value: '#/', label: '★ Campaign' },
+    { group: 'Missions', options: MISSIONS.map(m => ({ value: `#/mission/${m.turn}`, label: `${m.turn}. ${m.title}` })) },
+    { group: 'Squadrons', options: SIDE_KEYS.map(side => ({ value: `#/roster/${side}`, label: squadronName(side) })) },
+    { group: 'Reference', options: [{ value: '#/aircraft', label: 'Aircraft' }] },
+  ];
+  return `<header class="appbar">
+    <select class="title-select jump" data-nav aria-label="Go to">${optionsHtml(options, current)}</select>
+    ${layoutSwitch()}
+  </header>`;
+}
+
+function layoutSwitch() {
+  return `<div class="segmented layout-switch" title="Try both navigation layouts">${['a', 'b'].map(l =>
+    `<button class="${ui.layout === l ? 'on' : ''}" data-act="set-layout" data-layout="${l}">${l.toUpperCase()}</button>`).join('')}</div>`;
 }
 
 function render() {
-  const hash = location.hash || '#/';
-  const parts = hash.slice(2).split('/');
+  const route = parseRoute();
+
+  // "Missions" opens the last mission looked at.
+  if (route.name === 'missions') {
+    location.replace(`#/mission/${ui.lastMission || 1}`);
+    return;
+  }
+  if (route.name === 'mission' && missionDef(route.a)) {
+    ui.lastMission = Number(route.a);
+    saveUi();
+  }
+
+  let body;
+  if (route.name === 'roster' && SIDES[route.a]) body = viewRoster(route.a);
+  else if (route.name === 'pilot' && SIDES[route.a]) body = viewPilot(route.a, route.b);
+  else if (route.name === 'mission') body = viewMission(Number(route.a), route.b);
+  else if (route.name === 'aircraft') body = viewAircraft();
+  else body = viewCampaign();
+
   // Keep focus on whichever field the user moved to.
   const activeId = document.activeElement && document.activeElement.id;
-  let html;
-  if (parts[0] === 'roster' && SIDES[parts[1]]) html = viewRoster(parts[1]);
-  else if (parts[0] === 'pilot' && SIDES[parts[1]]) html = viewPilot(parts[1], parts[2]);
-  else if (parts[0] === 'mission') html = viewMission(Number(parts[1]));
-  else if (parts[0] === 'aircraft') html = viewAircraft();
-  else html = viewHome();
-  app.innerHTML = html;
-  renderNav();
-  renderFileStatus();
+  const layoutA = ui.layout === 'a';
+  root.className = `layout-${ui.layout}`;
+  root.innerHTML = `
+    ${layoutA ? headerA(route) : headerB(route)}
+    <main id="app">${body}</main>
+    ${layoutA ? bottomBar(route) : ''}
+  `;
   if (activeId) {
     const el = document.getElementById(activeId);
     if (el) el.focus();
@@ -697,7 +748,16 @@ function queueRender() {
   setTimeout(() => { renderQueued = false; render(); }, 0);
 }
 
+let lastPage = '';
 Store.init();
 Store.onChange(queueRender);
-window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+window.addEventListener('hashchange', () => {
+  // Only jump to the top when moving to a different page, not between list/debrief sides.
+  const page = location.hash.split('/').slice(0, 3).join('/');
+  render();
+  if (page !== lastPage) window.scrollTo(0, 0);
+  lastPage = page;
+});
+// Opening the app goes to the last mission looked at.
+if (!location.hash && ui.lastMission) location.replace(`#/mission/${ui.lastMission}`);
 render();
