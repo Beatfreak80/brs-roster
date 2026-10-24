@@ -48,9 +48,9 @@ small { font-size: .8em; }
 
 #root { max-width: var(--col); margin: 0 auto; min-height: 100vh; background: var(--paper); box-shadow: 0 0 0 1px var(--line); }
 main { padding: 14px 16px 40px; }
-.layout-a main { padding-bottom: calc(var(--bar-h) + 30px + env(safe-area-inset-bottom)); }
+main { padding-bottom: calc(var(--bar-h) + 30px + env(safe-area-inset-bottom)); }
 
-/* ---------- app bar (both layouts) ---------- */
+/* ---------- app bar ---------- */
 
 .appbar {
   position: sticky; top: 0; z-index: 20;
@@ -71,11 +71,8 @@ main { padding: 14px 16px 40px; }
 .segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .segmented button { border: 0; border-radius: 0; background: transparent; padding: 6px 12px; font-weight: 600; }
 .segmented button.on { background: var(--ink); color: var(--paper); }
-.layout-switch { border-color: #5a5048; flex-shrink: 0; }
-.layout-switch button { color: #cfc4b3; padding: 6px 10px; font-size: .8rem; }
-.layout-switch button.on { background: var(--red); color: #fff; }
 
-/* ---------- layout A: bottom tab bar ---------- */
+/* ---------- bottom tab bar ---------- */
 
 .bottombar {
   position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
@@ -226,7 +223,6 @@ details.nested input { max-width: 120px; margin-top: 6px; }
   display: grid; grid-template-columns: repeat(4, 1fr);
   margin: -14px -16px 14px; background: var(--paper); border-bottom: 1px solid var(--line);
 }
-.layout-b .tabs { margin-top: 0; }
 .tabs a { text-align: center; padding: 12px 4px; text-decoration: none; color: var(--muted); font-weight: 600; font-size: .9rem; border-bottom: 3px solid transparent; }
 .tabs a.on { color: var(--ink); border-bottom-color: var(--red); }
 

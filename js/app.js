@@ -1,9 +1,6 @@
 // Phone-first UI: hash routing, views and edit handling. Every input carries a data-path into
 // the state; changes are written straight back, committed, and the view re-rendered.
-//
-// Two navigation layouts are available while we try them out:
-//   A — bottom tab bar (Campaign / Missions / RAF / Luftwaffe) + mission picker in the header
-//   B — a single "jump to" dropdown in the header
+// Navigation: bottom tab bar (Campaign / Missions / RAF / Luftwaffe), mission picker in the header.
 
 const root = document.getElementById('root');
 const UI_KEY = 'brs-roster:ui';
@@ -15,7 +12,7 @@ const MISSION_TABS = [
 ];
 
 // Per-device view preferences (not campaign data).
-const ui = Object.assign({ layout: 'a', side: 'gb', lastMission: 0 }, readUi());
+const ui = Object.assign({ side: 'gb', lastMission: 0 }, readUi());
 
 function readUi() {
   try { return JSON.parse(localStorage.getItem(UI_KEY) || '{}'); } catch (e) { return {}; }
@@ -237,11 +234,6 @@ const actions = {
   },
   'set-side'(btn) {
     ui.side = btn.dataset.side;
-    saveUi();
-    render();
-  },
-  'set-layout'(btn) {
-    ui.layout = btn.dataset.layout;
     saveUi();
     render();
   },
@@ -506,7 +498,7 @@ function missionOverview(turn) {
     <section class="panel">
       <h3>Result</h3>
       ${pills(`missions.${turn}.winner`, mission.winner, [
-        { value: '', label: 'Not played' },
+        { value: '', label: 'Unplayed' },
         { value: 'gb', label: 'RAF won', cls: 'side-gb' },
         { value: 'de', label: 'LW won', cls: 'side-de' },
         { value: 'draw', label: 'Draw' },
@@ -624,9 +616,7 @@ function viewMission(turn, tab) {
   if (!m) return '<p class="empty">Mission not found.</p>';
   const views = { overview: missionOverview, rules: missionRules, lists: missionLists, debrief: missionDebrief };
   const current = views[tab] ? tab : 'overview';
-  const pickerInHeader = ui.layout === 'a';
   return `
-    ${pickerInHeader ? '' : `<section class="page-head"><p class="eyebrow">Turn ${m.turn} · ${esc(m.month)}</p><h1>${esc(m.title)}</h1></section>`}
     <nav class="tabs">${MISSION_TABS.map(t => `<a class="${t.key === current ? 'on' : ''}" href="#/mission/${turn}/${t.key}">${t.label}</a>`).join('')}</nav>
     <div class="tab-body">${views[current](turn)}</div>
   `;
@@ -646,7 +636,7 @@ function viewAircraft() {
   `;
 }
 
-// ---------- shell & layouts ----------
+// ---------- shell ----------
 
 function parseRoute() {
   const parts = (location.hash || '#/').slice(2).split('/');
@@ -658,15 +648,15 @@ function missionPicker(turn, tab) {
   return `<select class="title-select" data-nav aria-label="Mission">${optionsHtml(options, `#/mission/${turn}/${tab}`)}</select>`;
 }
 
-// Layout A: header shows where you are; bottom tab bar to switch section.
-function headerA(route) {
+// Header shows where you are (a mission picker on mission pages); the bottom bar switches section.
+function header(route) {
   let title;
   if (route.name === 'mission') title = missionPicker(Number(route.a), route.b || 'overview');
   else if (route.name === 'roster') title = `<span class="title-text">${esc(squadronName(route.a))}</span>`;
   else if (route.name === 'pilot') title = `<span class="title-text">${esc(squadronName(route.a))}</span>`;
   else if (route.name === 'aircraft') title = '<span class="title-text">Aircraft</span>';
   else title = '<span class="title-text">Blood Red Skies</span>';
-  return `<header class="appbar">${title}${layoutSwitch()}</header>`;
+  return `<header class="appbar">${title}</header>`;
 }
 
 function bottomBar(route) {
@@ -680,29 +670,6 @@ function bottomBar(route) {
     { key: 'roster-de', href: '#/roster/de', icon: '✠', label: 'Luftwaffe', cls: 'side-de' },
   ];
   return `<nav class="bottombar">${tabs.map(t => `<a href="${t.href}" class="${t.cls || ''} ${section === t.key ? 'on' : ''}"><span class="bb-icon">${t.icon}</span>${t.label}</a>`).join('')}</nav>`;
-}
-
-// Layout B: one dropdown to jump anywhere.
-function headerB(route) {
-  let current = '#/';
-  if (route.name === 'mission') current = `#/mission/${route.a}`;
-  else if (route.name === 'roster' || route.name === 'pilot') current = `#/roster/${route.a}`;
-  else if (route.name === 'aircraft') current = '#/aircraft';
-  const options = [
-    { value: '#/', label: '★ Campaign' },
-    { group: 'Missions', options: MISSIONS.map(m => ({ value: `#/mission/${m.turn}`, label: `${m.turn}. ${m.title}` })) },
-    { group: 'Squadrons', options: SIDE_KEYS.map(side => ({ value: `#/roster/${side}`, label: squadronName(side) })) },
-    { group: 'Reference', options: [{ value: '#/aircraft', label: 'Aircraft' }] },
-  ];
-  return `<header class="appbar">
-    <select class="title-select jump" data-nav aria-label="Go to">${optionsHtml(options, current)}</select>
-    ${layoutSwitch()}
-  </header>`;
-}
-
-function layoutSwitch() {
-  return `<div class="segmented layout-switch" title="Try both navigation layouts">${['a', 'b'].map(l =>
-    `<button class="${ui.layout === l ? 'on' : ''}" data-act="set-layout" data-layout="${l}">${l.toUpperCase()}</button>`).join('')}</div>`;
 }
 
 function render() {
@@ -727,12 +694,10 @@ function render() {
 
   // Keep focus on whichever field the user moved to.
   const activeId = document.activeElement && document.activeElement.id;
-  const layoutA = ui.layout === 'a';
-  root.className = `layout-${ui.layout}`;
   root.innerHTML = `
-    ${layoutA ? headerA(route) : headerB(route)}
+    ${header(route)}
     <main id="app">${body}</main>
-    ${layoutA ? bottomBar(route) : ''}
+    ${bottomBar(route)}
   `;
   if (activeId) {
     const el = document.getElementById(activeId);

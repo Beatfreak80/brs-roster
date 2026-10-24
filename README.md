@@ -19,9 +19,7 @@ Open `index.html` in Chrome or Edge. There's no install or build step.
 
 It's designed for phones. On a desktop it shows as a phone-width column.
 
-There are two navigation layouts to try, switched with the **A | B** toggle in the header:
-- **A**: a bottom tab bar (Campaign / Missions / RAF / Luftwaffe), with a mission picker in the header.
-- **B**: a single "jump to" dropdown in the header.
+A tab bar at the bottom switches between Campaign, Missions, RAF and Luftwaffe. On a mission, the header is a dropdown for picking the month. Missions opens the last mission you looked at.
 
 ## Saving
 
