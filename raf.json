@@ -137,23 +137,24 @@
     "1": {
       "elements": [
         {
-          "plane": "",
-          "size": 2,
+          "plane": "spitfire",
+          "size": 3,
           "pilots": [
-            null,
-            null
+            "pmvmhpcwwn799",
+            "pmvmhmqj79yhy",
+            "pmvmhtv09bi8r"
           ]
         },
         {
-          "plane": "",
+          "plane": "hurricane",
           "size": 2,
           "pilots": [
-            null,
-            null
+            "pmvmhsddel9py",
+            "pmvmhxi8c6t7q"
           ]
         }
       ],
-      "locked": false
+      "locked": true
     },
     "2": {
       "elements": [
@@ -161,7 +162,7 @@
           "plane": "",
           "size": 2,
           "pilots": [
-            null,
+            "pmvmhxi8c6t7q",
             null
           ]
         },
@@ -174,18 +175,10 @@
           ]
         }
       ],
-      "locked": false
+      "locked": true
     },
     "3": {
       "elements": [
-        {
-          "plane": "",
-          "size": 2,
-          "pilots": [
-            null,
-            null
-          ]
-        },
         {
           "plane": "",
           "size": 2,
