@@ -132,5 +132,168 @@
       }
     ],
     "fatesApplied": []
+  },
+  "lists": {
+    "1": {
+      "elements": [
+        {
+          "plane": "spitfire",
+          "size": 3,
+          "pilots": [
+            "pmvmhpcwwn799",
+            "pmvmhmqj79yhy",
+            "pmvmhtv09bi8r"
+          ]
+        },
+        {
+          "plane": "hurricane",
+          "size": 2,
+          "pilots": [
+            "pmvmhsddel9py",
+            "pmvmhxi8c6t7q"
+          ]
+        }
+      ],
+      "locked": true
+    },
+    "2": {
+      "elements": [
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            "pmvmhxi8c6t7q",
+            null
+          ]
+        },
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        }
+      ],
+      "locked": true
+    },
+    "3": {
+      "elements": [
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        }
+      ],
+      "locked": false
+    },
+    "4": {
+      "elements": [
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        },
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        }
+      ],
+      "locked": false
+    },
+    "5": {
+      "elements": [
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        },
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        }
+      ],
+      "locked": false
+    },
+    "6": {
+      "elements": [
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        },
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        }
+      ],
+      "locked": false
+    },
+    "7": {
+      "elements": [
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        },
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        }
+      ],
+      "locked": false
+    },
+    "8": {
+      "elements": [
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        },
+        {
+          "plane": "",
+          "size": 2,
+          "pilots": [
+            null,
+            null
+          ]
+        }
+      ],
+      "locked": false
+    }
   }
 }
