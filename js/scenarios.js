@@ -17,6 +17,79 @@ const COMMON_SCENARIO_RULES = {
   ],
 };
 
+const FLAK_RULES = {
+  page: '29–31',
+  body: [
+    '## Target Flak Value',
+    'All targets are protected by some light flak, represented by the Light Flak value on the target card.',
+    '## Flak Final Defensive Fire',
+    'Light flak operates as a 360 degree turret for the target with a range of 6" (one range stick) from the edges of the target marker. It makes all strafing attacks on the target effectively ‘Head On’, but because of its longer range the flak is resolved before the strafing attack is made. If an attacking aircraft is shot down by flak it fails to execute its attack.',
+    '## Flak Firing in the End Phase',
+    'At the end of each turn light flak shoots at the nearest Disadvantaged aircraft within range, whether friend or foe.',
+    'If no Disadvantaged aircraft are within range, the owning player may use 50% of the light flak Firepower (rounding up) to shoot at a nominated Neutral enemy aircraft within range instead. These dice can be divided among multiple Neutral targets.',
+    'Light flak cannot attack Advantaged aircraft.',
+    '| Disadvantaged | Neutral | Advantaged',
+    '| Defends vs strafing; shoots closest aircraft in End phase | Shoots with 50% FP in End phase only | May not attack',
+    '## Damage to Flak',
+    'Each point hit scored against a target reduces its total Light Flak Firepower by one.',
+    '## Flak Cards',
+    'Flak cards are placed with target cards (or terrain cards if these are in use). A target may have several flak cards attached and their effects are cumulative. There are two types: Light Flak and Flak Barrage.',
+    '## Light Flak Bonus',
+    'A Light Flak card adds one, two or three Firepower to the flak value of a target. In some scenarios it is concealed under a terrain card to give that area a flak value of its own.',
+    '## Placing a Flak Barrage',
+    'At the beginning of the turn a Flak Barrage may place a set of barrage markers anywhere on the table (use Boom Chits if no dedicated markers are available). The number of markers equals the Flak Barrage’s Firepower. They are placed 2" apart, more than 6" from any aircraft.',
+    'Markers may be placed within clouds and on top of barrage balloon markers. The barrage stays in place until removed at the beginning of a later turn for repositioning.',
+    'Flak Barrage markers only affect Neutral and Advantaged planes, friend or foe.',
+    '## Moving through a Flak Barrage',
+    'A Neutral or Advantaged aircraft that contacts a barrage marker during its move must pass a Pilot Skill test to hold its course. If it fails, it loses an advantage level and must make an immediate 45 degree turn left or right (owner’s choice). One Boom Chit is counted against the squadron for each test failed.',
+    '## Ending Movement in Contact with a Flak Barrage',
+    'Roll two Firepower dice for the aircraft. This direct damage cannot be dodged.',
+    '- No successes: the aircraft escapes.',
+    '- One success: a single-engine aircraft is shot down; a multi-engine aircraft takes a Boom Chit.',
+    '- Two successes (critical): the aircraft is shot down, even if multi-engine.',
+    '## Neutralising a Flak Barrage',
+    'Each Area or Hull hit scored against a target reduces its associated Flak Barrage Firepower by one.',
+    '## Repositioning a Flak Barrage',
+    'At the beginning of a turn the owning player may remove a Flak Barrage, ready to place it again at the beginning of the following turn.',
+  ],
+};
+
+const TERRAIN_RULES = {
+  page: '34–35',
+  body: [
+    'Terrain cards show the landscape below and matter when flying at very low altitude. Use one terrain card per quarter of the table, placed face up. Terrain cards can be placed over target markers and flak cards to conceal them until approached.',
+    '| Terrain | Flak | Alert | Notes',
+    '| Flat | No effect | -1 Dice | Seas, lakes, steppe, mud flats',
+    '| Undulating | -1 Dice | -1 Dice | Hills, moors, forest',
+    '| Elevated | -2 Dice | -1 Dice | Disadvantaged planes -1 dice to manoeuvre',
+    '| Urban | None | None | Has its own Flak Firepower 2',
+  ],
+  // Shown one at a time as tabs under the summary.
+  types: [
+    { key: 'flat', label: 'Flat', body: [
+      'Flat areas let aircraft fly very low to avoid detection.',
+      '- In surprise attacks, the alert roll is reduced by one dice if all attacking aircraft are over flat, undulating or elevated terrain.',
+    ] },
+    { key: 'undulating', label: 'Undulating', body: [
+      'Hills and forest can mask planes from flak and help gain surprise.',
+      '- Light Flak Firepower is reduced by one when shooting at aircraft in undulating terrain.',
+      '- Alert roll reduced by one dice, as for Flat.',
+    ] },
+    { key: 'elevated', label: 'Elevated', body: [
+      'Mountains, valleys, sea cliffs and fjords. Hard for flak, but restrictive for low-flying aircraft.',
+      '- Defensive Flak Firepower is reduced by two when shooting at aircraft in elevated terrain.',
+      '- Disadvantaged planes take all manoeuvre tests with one less dice.',
+      '- Alert roll reduced by one dice, as for Flat.',
+    ] },
+    { key: 'urban', label: 'Urban', body: [
+      'Villages, towns, ports and cities always have some air defence.',
+      '- Urban terrain has a Defensive Flak value with Firepower 2, measured from the terrain card as if it were a target marker (it covers the area near the card, not the whole quarter).',
+      '- Extra Light Flak cards can be added to it, and Flak Barrages attached. These can be hidden under the Urban card as a surprise.',
+      '- Keep Urban terrain to 50% of the table or less.',
+    ] },
+  ],
+};
+
 const SCENARIOS = {
   0: {
     name: 'Intruder Flight', page: 48, bombers: false,
@@ -336,11 +409,11 @@ const SCENARIOS = {
     body: [
       'Roving fighter-bombers – ‘Jabos’ as Germans called them – became the scourge of supply units behind the front lines. Trains and truck convoys were reliant on concealment, flak and local air cover to keep the marauders at bay.',
       '## Attackers and Defenders',
-      'The player with the largest number of planes in their force is considered to be the attacking player. If points or numbers of planes are equal each player rolls a dice for initiative. The high roller is the one attacking and has the option to use the ‘Numbers’ Theatre card as one of their Theatre card choices. The Defender has the option to use the ‘Home Advantage’ Theatre card as one of their choices.',
+      'The RAF is the attacking player and the Luftwaffe is the defending player.',
       '## Elements',
       'In this scenario each player deploys in two or more elements with at least two aircraft assigned to each element. Each element must entirely comprise planes from the same squadron.',
       '## Deployment Sequence',
-      '1. Terrain cards: Deal out random terrain cards placing one face up in the centre of each 2\' square of the table.',
+      '1. Terrain cards: Deal out four random terrain cards, placing one face up in the centre of each quarter of the table.',
       '2. Flak: The defending player draws a light flak card at random and conceals it under one of the terrain cards on the table. The light flak is only revealed when an aircraft moves within range of it for the first time. Use spare terrain cards to disguise which area has the flak card hidden in it.',
       '3. Player Elements: The defending player places an element of aircraft anywhere on the table. The second player then deploys an element of aircraft more than 19" from any enemy aircraft. Players then alternate placing elements following the same restrictions until they are all deployed.',
       'Each player may choose to deploy one element after the first as a High Cover marker on any table edge.',

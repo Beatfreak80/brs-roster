@@ -13,27 +13,27 @@ const PLANES = {
   spitfire: {
     side: 'gb', maker: 'Supermarine', name: 'Spitfire Mk I/II', kind: 'Single engine fighter', year: 1940,
     fp: 1, ag: 3, spd: 7, mph: 357, traits: ['Tight Turn'],
-    cost: { 2: 62, 3: 93 }, card: 'cards/Plane Cards_card8.png',
+    cost: { 2: 62, 3: 93 },
   },
   hurricane: {
     side: 'gb', maker: 'Hawker', name: 'Hurricane Mk II', kind: 'Single engine fighter', year: 1940,
     fp: 1, ag: 2, spd: 7, mph: 342, traits: ['Robust', 'Tight Turn'],
-    cost: { 2: 58, 3: 87 }, card: 'cards/Plane Cards_card4.png',
+    cost: { 2: 58, 3: 87 },
   },
   beaufighter: {
     side: 'gb', maker: 'Bristol', name: 'Beaufighter', kind: 'Twin engine heavy fighter', year: 1940,
     fp: 3, ag: 1, spd: 6, mph: 323, traits: ['Heavy Hitter', 'Robust', 'Multi Engine (2)'],
-    cost: { 2: 88, 3: 132 }, card: 'cards/Plane Cards_card12.png',
+    cost: { 2: 88, 3: 132 },
   },
   bf109e: {
     side: 'de', maker: 'Messerschmitt', name: 'Bf 109E', kind: 'Single engine fighter', year: 1939,
     fp: 1, ag: 3, spd: 7, mph: 354, traits: ['Great Climb', 'Great Dive'],
-    cost: { 2: 64, 3: 96 }, card: 'cards/Plane Cards_card18.png',
+    cost: { 2: 64, 3: 96 },
   },
   bf110c: {
     side: 'de', maker: 'Messerschmitt', name: 'Bf 110C', kind: 'Twin engine heavy fighter', year: 1939,
     fp: 2, ag: 1, spd: 7, mph: 349, traits: ['Great Dive', 'Heavy Hitter', 'Turret (Rear FP1)'],
-    cost: { 2: 78, 3: 117 }, card: 'cards/Plane Cards_card21.png',
+    cost: { 2: 78, 3: 117 },
   },
 };
 

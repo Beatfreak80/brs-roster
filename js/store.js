@@ -33,14 +33,14 @@ function normalizeState(state) {
     const s = state.sides[side] = Object.assign({ squadronName: '', player: '', pilots: [] }, state.sides[side]);
     s.pilots = s.pilots.map(p => Object.assign({
       id: newId(), name: '', startSkill: 3, startXp: 0, joined: 0, status: 'Active',
-      aceSkills: [], namedAceBonus: '', xpAdjust: 0, killsAdjust: 0, notes: '',
+      aceSkills: [], namedAceBonus: '', xpAdjust: 0, killsAdjust: 0, sortiesAdjust: 0, notes: '',
     }, p));
   }
   for (const m of MISSIONS) {
     const mission = state.missions[m.turn] = Object.assign({ winner: '', vp: {}, notes: '', lists: {}, results: {} }, state.missions[m.turn]);
     for (const side of SIDE_KEYS) {
       if (mission.vp[side] === undefined) mission.vp[side] = '';
-      const list = mission.lists[side] = Object.assign({ elements: [emptyElement(), emptyElement()] }, mission.lists[side]);
+      const list = mission.lists[side] = Object.assign({ elements: [emptyElement(), emptyElement()], locked: false }, mission.lists[side]);
       for (const el of list.elements) {
         el.size = Number(el.size) || 2;
         el.pilots = (el.pilots || []).slice(0, el.size);

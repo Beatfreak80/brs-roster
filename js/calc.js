@@ -68,10 +68,11 @@ function skillFor(pilot, xp, kills) {
 }
 
 // Pilot record as it stood at the start of `beforeTurn` (use Infinity for "now"),
-// plus a per-mission history.
+// plus a per-mission history. Only missions before `beforeTurn` count, so a past list keeps
+// the skill and points its pilots had at the time.
 function pilotRecord(state, side, pilot, beforeTurn = Infinity) {
-  let xp = (Number(pilot.startXp) || 0) + (Number(pilot.xpAdjust) || 0);
-  let kills = Number(pilot.killsAdjust) || 0;
+  let xp = Number(pilot.startXp) || 0;
+  let kills = 0;
   let sorties = 0;
   const history = [];
   for (const m of MISSIONS) {
@@ -85,6 +86,13 @@ function pilotRecord(state, side, pilot, beforeTurn = Infinity) {
     kills += Number(result.kills) || 0;
     sorties += 1;
     history.push({ turn: m.turn, skillAtStart, result, won, gained, plane: planeFlownBy(state, m.turn, side, pilot.id) });
+  }
+  // Manual corrections on the pilot page apply to the current record only, never to past missions.
+  if (beforeTurn === Infinity) {
+    xp += Number(pilot.xpAdjust) || 0;
+    kills += Number(pilot.killsAdjust) || 0;
+    // e.g. missions flown before they were recorded in the app
+    sorties = Math.max(0, sorties + (Number(pilot.sortiesAdjust) || 0));
   }
   const skill = skillFor(pilot, xp, kills);
   return {
@@ -112,7 +120,7 @@ function listCost(state, turn, side) {
   return total;
 }
 
-// Enemy planes shot down by `side` in a mission (sum of its pilots' recorded kills).
+// Victories (enemy planes shot down) by `side` in a mission: the sum of its pilots' recorded kills.
 function missionKills(state, turn, side) {
   if (!isPlayed(state, turn)) return 0;
   return seatedPilotIds(state, turn, side).reduce((n, id) => n + (Number(resultFor(state, turn, id).kills) || 0), 0);
@@ -128,24 +136,4 @@ function campaignTotals(state) {
     }
   }
   return totals;
-}
-
-// Founding squadron check (campaign rules p.1) and replacement upgrade budget.
-function squadronCheck(state, side) {
-  const pilots = state.sides[side].pilots;
-  const founding = pilots.filter(p => Number(p.joined) === 0);
-  const foundingPoints = founding.reduce((n, p) => n + (Number(p.startSkill) || 0), 0);
-  const upgradePoints = pilots
-    .filter(p => Number(p.joined) > 0)
-    .reduce((n, p) => n + Math.max(0, (Number(p.startSkill) || 2) - 2), 0);
-  const spent = foundingPoints + upgradePoints;
-  const onRoster = pilots.filter(p => !GONE_STATUSES.includes(p.status)).length;
-  return {
-    foundingCount: founding.length,
-    foundingPoints,
-    upgradePoints,
-    spent,
-    remaining: SQUADRON_RULES.skillPoints - spent,
-    onRoster,
-  };
 }
