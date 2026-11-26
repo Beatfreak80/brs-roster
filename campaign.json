@@ -1,0 +1,586 @@
+{
+  "version": 1,
+  "campaignName": "Campaign 1 — The Western Front & Defence of Britain",
+  "sides": {
+    "de": {
+      "squadronName": "Der Graue Tod",
+      "player": "Gary",
+      "pilots": [
+        {
+          "id": "pmvmiamay2hr7",
+          "name": "Heinrich Adler",
+          "startSkill": 5,
+          "startXp": 50,
+          "joined": 0,
+          "status": "Active",
+          "aceSkills": [],
+          "namedAceBonus": "",
+          "xpAdjust": 6,
+          "killsAdjust": 0,
+          "sortiesAdjust": 2,
+          "notes": ""
+        },
+        {
+          "id": "pmvmib0llmw5v",
+          "name": "Friedrich Siebel",
+          "startSkill": 4,
+          "startXp": 25,
+          "joined": 0,
+          "status": "Active",
+          "aceSkills": [],
+          "namedAceBonus": "",
+          "xpAdjust": 6,
+          "killsAdjust": 0,
+          "sortiesAdjust": 2,
+          "notes": ""
+        },
+        {
+          "id": "pmvmibaxd5zll",
+          "name": "Otto Obermeyer",
+          "startSkill": 4,
+          "startXp": 25,
+          "joined": 0,
+          "status": "Active",
+          "aceSkills": [],
+          "namedAceBonus": "",
+          "xpAdjust": 11,
+          "killsAdjust": 0,
+          "sortiesAdjust": 2,
+          "notes": ""
+        },
+        {
+          "id": "pmvmibnp4351f",
+          "name": "Wilhelm Tiehl",
+          "startSkill": 3,
+          "startXp": 15,
+          "joined": 0,
+          "status": "Active",
+          "aceSkills": [
+            ""
+          ],
+          "namedAceBonus": "",
+          "xpAdjust": 11,
+          "killsAdjust": 0,
+          "sortiesAdjust": 2,
+          "notes": ""
+        },
+        {
+          "id": "pmvmicvhy9unj",
+          "name": "Ernst Ehrhard",
+          "startSkill": 3,
+          "startXp": 12,
+          "joined": 0,
+          "status": "Active",
+          "aceSkills": [],
+          "namedAceBonus": "",
+          "xpAdjust": 5,
+          "killsAdjust": 0,
+          "sortiesAdjust": 1,
+          "notes": ""
+        },
+        {
+          "id": "pmvmid7fii550",
+          "name": "Johann Bert",
+          "startSkill": 3,
+          "startXp": 12,
+          "joined": 0,
+          "status": "Active",
+          "aceSkills": [],
+          "namedAceBonus": "",
+          "xpAdjust": 5,
+          "killsAdjust": 0,
+          "sortiesAdjust": 1,
+          "notes": ""
+        },
+        {
+          "id": "pmvmidfn2vj34",
+          "name": "Willy Metzger",
+          "startSkill": 2,
+          "startXp": 5,
+          "joined": 0,
+          "status": "Active",
+          "aceSkills": [],
+          "namedAceBonus": "",
+          "xpAdjust": 0,
+          "killsAdjust": 0,
+          "sortiesAdjust": 0,
+          "notes": ""
+        },
+        {
+          "id": "pmwxzefx5ixha",
+          "name": "Uve Wildente",
+          "startSkill": 2,
+          "startXp": 0,
+          "joined": 1,
+          "status": "Active",
+          "aceSkills": [],
+          "namedAceBonus": "",
+          "xpAdjust": 0,
+          "killsAdjust": 0,
+          "sortiesAdjust": 0,
+          "notes": ""
+        },
+        {
+          "id": "pmwxzepsf4u96",
+          "name": "Klaus Vogel",
+          "startSkill": 2,
+          "startXp": 0,
+          "joined": 1,
+          "status": "Active",
+          "aceSkills": [],
+          "namedAceBonus": "",
+          "xpAdjust": 0,
+          "killsAdjust": 0,
+          "sortiesAdjust": 0,
+          "notes": ""
+        }
+      ]
+    }
+  },
+  "missions": {
+    "1": {
+      "winner": "gb",
+      "vp": {
+        "gb": "",
+        "de": ""
+      },
+      "notes": "",
+      "lists": {
+        "gb": {
+          "elements": [
+            {
+              "plane": "spitfire",
+              "size": 3,
+              "pilots": [
+                "pmvmhpcwwn799",
+                "pmvmhmqj79yhy",
+                "pmvmhtv09bi8r"
+              ]
+            },
+            {
+              "plane": "hurricane",
+              "size": 2,
+              "pilots": [
+                "pmvmhsddel9py",
+                "pmvmhxi8c6t7q"
+              ]
+            }
+          ],
+          "locked": true
+        },
+        "de": {
+          "elements": [
+            {
+              "plane": "bf109e",
+              "size": 3,
+              "pilots": [
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        }
+      },
+      "results": {
+        "pmvmhpcwwn799": {
+          "xpAdjust": 2,
+          "hits": 2,
+          "kills": 1,
+          "boom": 2
+        },
+        "pmvmhtv09bi8r": {
+          "boom": 2
+        }
+      }
+    },
+    "2": {
+      "winner": "gb",
+      "vp": {
+        "gb": 0,
+        "de": ""
+      },
+      "notes": "",
+      "lists": {
+        "gb": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                "pmvmhxi8c6t7q",
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": true
+        },
+        "de": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        }
+      },
+      "results": {
+        "pmvmhxi8c6t7q": {
+          "kills": 1
+        }
+      }
+    },
+    "3": {
+      "winner": "",
+      "vp": {
+        "gb": "",
+        "de": ""
+      },
+      "notes": "",
+      "lists": {
+        "gb": {
+          "elements": [
+            {
+              "plane": "spitfire",
+              "size": 2,
+              "pilots": [
+                "pmvmhxi8c6t7q",
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": true
+        },
+        "de": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        }
+      },
+      "results": {
+        "pmvmhxi8c6t7q": {
+          "kills": 1
+        }
+      }
+    },
+    "4": {
+      "winner": "",
+      "vp": {
+        "gb": "",
+        "de": ""
+      },
+      "notes": "",
+      "lists": {
+        "gb": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        },
+        "de": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        }
+      },
+      "results": {}
+    },
+    "5": {
+      "winner": "",
+      "vp": {
+        "gb": "",
+        "de": ""
+      },
+      "notes": "",
+      "lists": {
+        "gb": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        },
+        "de": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        }
+      },
+      "results": {}
+    },
+    "6": {
+      "winner": "",
+      "vp": {
+        "gb": "",
+        "de": ""
+      },
+      "notes": "",
+      "lists": {
+        "gb": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        },
+        "de": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        }
+      },
+      "results": {}
+    },
+    "7": {
+      "winner": "",
+      "vp": {
+        "gb": "",
+        "de": ""
+      },
+      "notes": "",
+      "lists": {
+        "gb": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        },
+        "de": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        }
+      },
+      "results": {}
+    },
+    "8": {
+      "winner": "",
+      "vp": {
+        "gb": "",
+        "de": ""
+      },
+      "notes": "",
+      "lists": {
+        "gb": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        },
+        "de": {
+          "elements": [
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            },
+            {
+              "plane": "",
+              "size": 2,
+              "pilots": [
+                null,
+                null
+              ]
+            }
+          ],
+          "locked": false
+        }
+      },
+      "results": {}
+    }
+  }
+}
