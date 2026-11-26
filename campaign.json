@@ -231,8 +231,9 @@
           "elements": [
             {
               "plane": "bf109e",
-              "size": 2,
+              "size": 3,
               "pilots": [
+                "pmvmiamay2hr7",
                 null,
                 null
               ]
