@@ -183,11 +183,10 @@
       "elements": [
         {
           "plane": "beaufighter",
-          "size": 3,
+          "size": 2,
           "pilots": [
             "pmvmhmqj79yhy",
-            "pmvmhu935u80g",
-            "pmwxzf43bkq9f"
+            "pmvmhu935u80g"
           ]
         },
         {
@@ -195,7 +194,7 @@
           "size": 2,
           "pilots": [
             "pmvmhpcwwn799",
-            null
+            "pmwxzfdgmup0t"
           ]
         }
       ],
