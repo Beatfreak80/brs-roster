@@ -212,7 +212,7 @@ const actions = {
     if (flown.length) msg += `\n\nThey are in the lists for mission(s) ${flown.join(', ')} and will be removed from those lists and their results.`;
     // With shared data the missions belong to the other player, so they can't be cleaned up from here.
     if (Sync.enabled() && side !== MAIN_SIDE && flown.length) {
-      alert(`${pilot.name || 'This pilot'} is in the lists for mission(s) ${flown.join(', ')}. Ask the ${SIDES[MAIN_SIDE].short} player to take them out of those lists first, or set their status to Retired instead.`);
+      alert(`${pilot.name || 'This pilot'} is in the lists for mission(s) ${flown.join(', ')}. Their mission record is kept by the ${SIDES[MAIN_SIDE].short} player, so set their status to Retired instead.`);
       return;
     }
     if (!confirm(msg)) return;
@@ -315,9 +315,10 @@ const ACTION_OWNER = {
   'remove-ace-skill': btn => btn.dataset.side,
   'edit-squadron': btn => btn.dataset.side || null,
   'adjust-sorties': btn => btn.dataset.side || null,
-  'add-element': () => MAIN_SIDE,
-  'remove-element': () => MAIN_SIDE,
-  'lock-list': () => MAIN_SIDE,
+  // Each player builds and saves their own side's mission lists; scoresheet results stay with MAIN_SIDE.
+  'add-element': btn => btn.dataset.side,
+  'remove-element': btn => btn.dataset.side,
+  'lock-list': btn => btn.dataset.side,
   'open-counter': () => MAIN_SIDE,
   'reset-campaign': () => MAIN_SIDE,
   step: btn => pathOwner(btn.dataset.path),
@@ -1029,8 +1030,12 @@ function viewSync() {
 // The page's data belongs to the other player: say so above the greyed-out fields.
 function readOnlyNote(route) {
   if (!Sync.enabled()) return '';
-  const owner = route.name === 'roster' || route.name === 'pilot' ? route.a
-    : route.name === 'mission' && missionDef(route.a) ? MAIN_SIDE : null;
+  let owner = route.name === 'roster' || route.name === 'pilot' ? route.a : null;
+  if (route.name === 'mission' && missionDef(route.a)) {
+    // A side's list tab: the builder is that side's; a saved list's scoresheet is shared, so no note.
+    if (SIDES[route.b]) owner = Store.state.missions[route.a].lists[route.b].locked ? null : route.b;
+    else owner = MAIN_SIDE;
+  }
   if (!owner || !SIDES[owner] || Sync.canEdit(owner)) return '';
   return `<p class="readonly-note">Read only: the ${esc(SIDES[owner].short)} player keeps this.</p>`;
 }

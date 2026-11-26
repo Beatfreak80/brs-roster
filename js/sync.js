@@ -2,7 +2,7 @@
 //
 // The data is split into two files on the repo's "data" branch, each written by one player only:
 //  - main: the Luftwaffe roster, the missions and everything else (written by the Luftwaffe player)
-//  - gb:   the RAF roster (written by the RAF player)
+//  - gb:   the RAF roster and RAF mission lists (written by the RAF player)
 // Both tokens can write the whole repo; the app decides which file each player saves.
 // Separate files mean the two players never overwrite each other.
 // Edits are saved on the phone straight away and sent to GitHub 5 seconds after the last change.
@@ -19,18 +19,36 @@ const SYNC_FILES = {
 };
 
 // Which part of the state each file holds.
+// The RAF file holds the RAF roster and the RAF list for each mission; the main file holds the rest.
 function fileContent(key, state) {
-  if (key === 'gb') return { version: state.version, side: state.sides.gb };
-  return { version: state.version, campaignName: state.campaignName, sides: { de: state.sides.de }, missions: state.missions };
+  const turns = Object.keys(state.missions);
+  if (key === 'gb') {
+    return { version: state.version, side: state.sides.gb, lists: Object.fromEntries(turns.map(t => [t, state.missions[t].lists.gb])) };
+  }
+  const missions = Object.fromEntries(turns.map(t => {
+    const m = state.missions[t];
+    return [t, Object.assign({}, m, { lists: { de: m.lists.de } })];
+  }));
+  return { version: state.version, campaignName: state.campaignName, sides: { de: state.sides.de }, missions };
 }
 
 function applyFileContent(key, data, state) {
   if (key === 'gb') {
     state.sides.gb = data.side;
+    // Older RAF files had no lists; then the ones already here (from the main file) are kept.
+    for (const [t, list] of Object.entries(data.lists || {})) {
+      if (state.missions[t] && list) state.missions[t].lists.gb = list;
+    }
   } else {
+    const rafLists = Object.fromEntries(Object.entries(state.missions).map(([t, m]) => [t, m.lists && m.lists.gb]));
     state.campaignName = data.campaignName;
     state.sides.de = data.sides.de;
     state.missions = data.missions;
+    for (const [t, m] of Object.entries(state.missions)) {
+      m.lists = m.lists || {};
+      // RAF lists come from the RAF file; older main files still carried them, used until then.
+      if (rafLists[t]) m.lists.gb = rafLists[t];
+    }
   }
 }
 
@@ -44,9 +62,9 @@ function hasData(key, state) {
   return c.sides.de.pilots.length > 0 || !!c.sides.de.squadronName || Object.values(c.missions).some(m => m.winner || m.lists.de.elements.some(e => e.plane));
 }
 
-// Who keeps each part of the data. Paths look like "sides.gb.pilots.#id.name" or "missions.3.vp.de".
+// Who keeps each part of the data. Paths look like "sides.gb.pilots.#id.name", "missions.3.lists.gb.elements.0.plane" or "missions.3.vp.de".
 function pathOwner(path) {
-  const m = String(path).match(/^sides\.(\w+)\./);
+  const m = String(path).match(/^sides\.(\w+)\./) || String(path).match(/^missions\.\d+\.lists\.(\w+)\./);
   return m ? m[1] : MAIN_SIDE;
 }
 
