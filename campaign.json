@@ -13,7 +13,9 @@
           "startXp": 50,
           "joined": 0,
           "status": "Active",
-          "aceSkills": [],
+          "aceSkills": [
+            "Master Tactician"
+          ],
           "namedAceBonus": "",
           "xpAdjust": 6,
           "killsAdjust": 0,
