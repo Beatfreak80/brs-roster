@@ -182,9 +182,10 @@
     "3": {
       "elements": [
         {
-          "plane": "",
-          "size": 2,
+          "plane": "beaufighter",
+          "size": 3,
           "pilots": [
+            null,
             null,
             null
           ]
