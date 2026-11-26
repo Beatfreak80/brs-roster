@@ -11,7 +11,9 @@
         "startXp": 58,
         "joined": 0,
         "status": "Active",
-        "aceSkills": [],
+        "aceSkills": [
+          "Aggressive"
+        ],
         "namedAceBonus": "",
         "xpAdjust": 0,
         "killsAdjust": 0,
