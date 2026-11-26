@@ -1117,3 +1117,21 @@ window.addEventListener('hashchange', () => {
 });
 // Opening the app (no hash) lands on the Campaign page.
 render();
+
+// Phones may keep the page cached for a while after an update. On opening (and on coming back to the
+// app), fetch the page fresh, which also refreshes the browser's copy; if it's a newer version, reload
+// into it. Unsent edits are safe: they're stored on the phone and sent after the reload.
+async function checkForUpdate() {
+  if (location.protocol === 'file:' || !window.APP_VERSION) return;
+  try {
+    const html = await (await fetch(location.pathname, { cache: 'reload' })).text();
+    const latest = (html.match(/APP_VERSION = '([^']+)'/) || [])[1];
+    // Only once per version, in case the browser still hands back the old page.
+    if (latest && latest !== window.APP_VERSION && sessionStorage.getItem('brs-roster:reloaded') !== latest) {
+      sessionStorage.setItem('brs-roster:reloaded', latest);
+      location.reload();
+    }
+  } catch (e) { /* offline: try again next time */ }
+}
+checkForUpdate();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });

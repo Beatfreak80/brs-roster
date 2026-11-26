@@ -17,7 +17,11 @@ Pilot XP, skill, sorties and victories are **worked out** from each pilot's star
 
 Open `index.html` in Chrome or Edge. There's no install or build step.
 
-It's designed for phones. On a desktop it shows as a phone-width column.
+It's designed for phones. The live copy is at https://beatfreak80.github.io/brs-roster/.
+
+**Releasing an update:** bump `APP_VERSION` and every `?v=` in `index.html`, then push to `main`. Open apps notice the new version and reload themselves.
+
+ On a desktop it shows as a phone-width column.
 
 A tab bar at the bottom switches between Campaign, Mission, RAF and Luftwaffe. You pick a mission on the Campaign page, and the Mission tab always shows the one you last picked.
 
