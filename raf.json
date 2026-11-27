@@ -77,20 +77,6 @@
         "notes": ""
       },
       {
-        "id": "pmvmhu935u80g",
-        "name": "Jim 'JJ' Jamesom",
-        "startSkill": 3,
-        "startXp": 11,
-        "joined": 0,
-        "status": "Active",
-        "aceSkills": [],
-        "namedAceBonus": "",
-        "xpAdjust": 0,
-        "killsAdjust": 0,
-        "sortiesAdjust": 1,
-        "notes": ""
-      },
-      {
         "id": "pmvmhxi8c6t7q",
         "name": "Gary Fisher",
         "startSkill": 2,
@@ -102,6 +88,20 @@
         "xpAdjust": 0,
         "killsAdjust": 1,
         "sortiesAdjust": 0,
+        "notes": ""
+      },
+      {
+        "id": "pmvmhu935u80g",
+        "name": "Jim 'JJ' Jamesom",
+        "startSkill": 3,
+        "startXp": 11,
+        "joined": 0,
+        "status": "Active",
+        "aceSkills": [],
+        "namedAceBonus": "",
+        "xpAdjust": 0,
+        "killsAdjust": 0,
+        "sortiesAdjust": 1,
         "notes": ""
       },
       {
@@ -119,12 +119,12 @@
         "notes": ""
       },
       {
-        "id": "pmwxzfdgmup0t",
-        "name": "Angus Lachlan",
+        "id": "pmwy84cxuyd44",
+        "name": "David Longleat",
         "startSkill": 2,
         "startXp": 0,
-        "joined": 1,
-        "status": "Retired",
+        "joined": 3,
+        "status": "Active",
         "aceSkills": [],
         "namedAceBonus": "",
         "xpAdjust": 0,
@@ -133,12 +133,12 @@
         "notes": ""
       },
       {
-        "id": "pmwy84cxuyd44",
-        "name": "David Longleat",
+        "id": "pmwxzfdgmup0t",
+        "name": "Angus Lachlan",
         "startSkill": 2,
         "startXp": 0,
-        "joined": 3,
-        "status": "Active",
+        "joined": 1,
+        "status": "Retired",
         "aceSkills": [],
         "namedAceBonus": "",
         "xpAdjust": 0,
