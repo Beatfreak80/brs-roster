@@ -124,7 +124,7 @@
         "startSkill": 2,
         "startXp": 0,
         "joined": 1,
-        "status": "Active",
+        "status": "Retired",
         "aceSkills": [],
         "namedAceBonus": "",
         "xpAdjust": 0,
@@ -133,7 +133,9 @@
         "notes": ""
       }
     ],
-    "fatesApplied": []
+    "fatesApplied": [
+      "3:pmwxzfdgmup0t:crippled"
+    ]
   },
   "lists": {
     "1": {
