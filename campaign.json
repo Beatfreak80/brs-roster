@@ -86,7 +86,7 @@
           "startSkill": 3,
           "startXp": 12,
           "joined": 0,
-          "status": "Active",
+          "status": "Injured",
           "aceSkills": [],
           "namedAceBonus": "",
           "xpAdjust": 5,
@@ -274,6 +274,9 @@
         },
         "pmwxzfdgmup0t": {
           "fate": "crippled"
+        },
+        "pmvmid7fii550": {
+          "fate": "major"
         }
       }
     },
