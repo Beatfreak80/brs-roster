@@ -131,6 +131,20 @@
         "killsAdjust": 0,
         "sortiesAdjust": 0,
         "notes": ""
+      },
+      {
+        "id": "pmwy84cxuyd44",
+        "name": "",
+        "startSkill": 2,
+        "startXp": 0,
+        "joined": 3,
+        "status": "Active",
+        "aceSkills": [],
+        "namedAceBonus": "",
+        "xpAdjust": 0,
+        "killsAdjust": 0,
+        "sortiesAdjust": 0,
+        "notes": ""
       }
     ],
     "fatesApplied": [
